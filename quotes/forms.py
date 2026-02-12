@@ -5,17 +5,38 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 from django.forms import BaseFormSet, formset_factory
 
-from .models import FreightRateConfig, Quote
+from .models import LocationRate, OriginLocation, Quote
 
 
 class QuoteForm(forms.Form):
     transport_type = forms.ChoiceField(choices=Quote.TransportType.choices, label="Tipo de transporte")
+    origin_location = forms.ModelChoiceField(
+        queryset=OriginLocation.objects.none(),
+        label="Origen",
+        empty_label="Selecciona origen",
+    )
     pieces_count = forms.IntegerField(
         label="Cantidad de piezas",
         min_value=1,
         max_value=200,
         help_text="Se ajusta automaticamente el formulario de piezas.",
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["origin_location"].queryset = OriginLocation.objects.filter(is_active=True).order_by("location_type", "name")
+
+    def clean(self):
+        cleaned_data = super().clean()
+        transport_type = cleaned_data.get("transport_type")
+        origin_location = cleaned_data.get("origin_location")
+        if not transport_type or not origin_location:
+            return cleaned_data
+
+        expected_type = OriginLocation.LocationType.AIRPORT if transport_type == Quote.TransportType.AIR else OriginLocation.LocationType.SEAPORT
+        if origin_location.location_type != expected_type:
+            self.add_error("origin_location", "El origen seleccionado no corresponde al tipo de transporte.")
+        return cleaned_data
 
 
 class QuoteItemInputForm(forms.Form):
@@ -68,12 +89,23 @@ class AdminUserCreationForm(UserCreationForm):
         return user
 
 
-class FreightRateConfigForm(forms.ModelForm):
+class OriginLocationForm(forms.ModelForm):
     class Meta:
-        model = FreightRateConfig
-        fields = ("air_rate_usd_per_kg", "sea_rate_usd_per_m3", "air_volumetric_factor")
+        model = OriginLocation
+        fields = ("location_type", "code", "name", "country", "is_active")
         labels = {
-            "air_rate_usd_per_kg": "Tarifa aerea (USD/kg)",
-            "sea_rate_usd_per_m3": "Tarifa maritima (USD/m3)",
-            "air_volumetric_factor": "Factor volumetrico aereo",
+            "location_type": "Tipo",
+            "code": "Codigo",
+            "name": "Nombre",
+            "country": "Pais",
+            "is_active": "Activo",
         }
+
+
+class LocationRateForm(forms.Form):
+    location = forms.ModelChoiceField(queryset=OriginLocation.objects.none(), label="Origen")
+    rate_usd = forms.DecimalField(label="Tarifa unica (USD)", min_value=Decimal("0.0001"), max_digits=12, decimal_places=4)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["location"].queryset = OriginLocation.objects.filter(is_active=True).order_by("location_type", "name")

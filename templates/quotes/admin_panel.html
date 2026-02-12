@@ -31,7 +31,7 @@
     .stats-grid {
         margin-top: 14px;
         display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(5, minmax(0, 1fr));
         gap: 10px;
     }
     .stat-box {
@@ -90,6 +90,14 @@
     <div class="stat-box">
         <strong>Cotizaciones</strong>
         <span>{{ stats.total_quotes }}</span>
+    </div>
+    <div class="stat-box">
+        <strong>Aeropuertos</strong>
+        <span>{{ stats.total_airports }}</span>
+    </div>
+    <div class="stat-box">
+        <strong>Puertos</strong>
+        <span>{{ stats.total_seaports }}</span>
     </div>
 </div>
 {% endblock %}

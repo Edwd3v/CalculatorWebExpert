@@ -91,7 +91,7 @@
                         <path d="M10.5 12.5L14.5 18H12.5L9.5 14.5L10.5 12.5Z" fill="currentColor"/>
                     </svg>
                     <strong>Aereo</strong>
-                    <span>Tarifa por kg cobrable.</span>
+                    <span>Tarifa unica: se cobra por mayor entre KG y M3.</span>
                 </button>
                 <button type="button" class="transport-option" data-transport="SEA">
                     <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -100,13 +100,30 @@
                         <path d="M3 17C4.4 18.3 5.8 18.3 7.2 17C8.6 15.7 10 15.7 11.4 17C12.8 18.3 14.2 18.3 15.6 17C17 15.7 18.4 15.7 19.8 17C20.5 17.6 21.2 17.9 22 18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
                     </svg>
                     <strong>Maritimo</strong>
-                    <span>Tarifa por m3 de volumen.</span>
+                    <span>Tarifa unica: se cobra por mayor entre KG y M3.</span>
                 </button>
             </div>
             <div class="sr-only">
                 {{ form.transport_type }}
             </div>
             {{ form.transport_type.errors }}
+        </div>
+        <div class="field">
+            <label for="{{ form.origin_location.id_for_label }}">Origen (Puerto/Aeropuerto)</label>
+            <select name="{{ form.origin_location.name }}" id="{{ form.origin_location.id_for_label }}" required>
+                <option value="">Selecciona origen</option>
+                {% for origin in form.fields.origin_location.queryset %}
+                    <option
+                        value="{{ origin.id }}"
+                        data-location-type="{{ origin.location_type }}"
+                        {% if form.origin_location.value|stringformat:"s" == origin.id|stringformat:"s" %}selected{% endif %}
+                    >
+                        {{ origin.code }} - {{ origin.name }} ({{ origin.get_location_type_display }})
+                    </option>
+                {% endfor %}
+            </select>
+            {{ form.origin_location.errors }}
+            <span class="help">Se mostraran aeropuertos para aereo y puertos para maritimo.</span>
         </div>
         <div class="field">
             <label for="{{ form.pieces_count.id_for_label }}">Cantidad de piezas</label>
@@ -163,6 +180,7 @@
     const transportSelect = document.getElementById('id_transport_type');
     const transportPicker = document.getElementById('transport-picker');
     const transportButtons = transportPicker ? transportPicker.querySelectorAll('.transport-option') : [];
+    const originSelect = document.getElementById('id_origin_location');
     const piecesInput = document.getElementById('id_pieces_count');
     const totalFormsInput = document.getElementById('id_items-TOTAL_FORMS');
     const tbody = document.querySelector('#items-table tbody');
@@ -174,6 +192,28 @@
             const isSelected = btn.dataset.transport === transportSelect.value;
             btn.classList.toggle('is-selected', isSelected);
         });
+        syncOriginOptions();
+    }
+
+    function syncOriginOptions() {
+        if (!originSelect || !transportSelect) return;
+        const selectedTransport = transportSelect.value;
+        const expectedType = selectedTransport === 'AIR' ? 'AIRPORT' : 'SEAPORT';
+        let hasCurrentSelection = false;
+        Array.from(originSelect.options).forEach((opt) => {
+            if (!opt.value) {
+                opt.hidden = false;
+                return;
+            }
+            const visible = opt.dataset.locationType === expectedType;
+            opt.hidden = !visible;
+            if (visible && opt.selected) {
+                hasCurrentSelection = true;
+            }
+        });
+        if (!hasCurrentSelection) {
+            originSelect.value = '';
+        }
     }
 
     if (transportSelect && transportButtons.length) {

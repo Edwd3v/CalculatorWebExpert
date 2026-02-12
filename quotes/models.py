@@ -1,6 +1,62 @@
+from datetime import date
+
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+
+
+class OriginLocation(models.Model):
+    class LocationType(models.TextChoices):
+        AIRPORT = "AIRPORT", "Aeropuerto"
+        SEAPORT = "SEAPORT", "Puerto"
+
+    name = models.CharField(max_length=120)
+    code = models.CharField(max_length=12, unique=True)
+    country = models.CharField(max_length=80)
+    location_type = models.CharField(max_length=16, choices=LocationType.choices)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["location_type", "code"]
+
+    def __str__(self) -> str:
+        return f"{self.code} - {self.name}"
+
+
+class LocationRate(models.Model):
+    location = models.ForeignKey(OriginLocation, on_delete=models.CASCADE, related_name="rates")
+    usd_per_kg = models.DecimalField(max_digits=12, decimal_places=4)
+    usd_per_m3 = models.DecimalField(max_digits=12, decimal_places=4)
+    effective_from = models.DateField()
+    effective_to = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="updated_location_rates",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-effective_from", "-id"]
+
+    def __str__(self) -> str:
+        return f"{self.location.code} {self.effective_from}"
+
+    @property
+    def rate_usd(self):
+        return self.usd_per_kg
+
+    def save(self, *args, **kwargs):
+        # Tarifa unica: mantenemos ambas columnas sincronizadas por compatibilidad.
+        if self.usd_per_kg is not None:
+            self.usd_per_m3 = self.usd_per_kg
+        if not self.effective_from:
+            self.effective_from = date.today()
+        super().save(*args, **kwargs)
 
 
 class Quote(models.Model):
@@ -13,6 +69,20 @@ class Quote(models.Model):
         VOLUME = "VOLUME", "Volumen"
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="quotes")
+    origin_location = models.ForeignKey(
+        OriginLocation,
+        on_delete=models.PROTECT,
+        related_name="quotes",
+        null=True,
+        blank=True,
+    )
+    applied_rate = models.ForeignKey(
+        LocationRate,
+        on_delete=models.SET_NULL,
+        related_name="quotes",
+        null=True,
+        blank=True,
+    )
     transport_type = models.CharField(max_length=10, choices=TransportType.choices)
     pieces_count = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(200)])
     actual_weight_total_kg = models.DecimalField(max_digits=12, decimal_places=3)

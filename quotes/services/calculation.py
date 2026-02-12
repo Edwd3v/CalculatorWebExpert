@@ -23,7 +23,7 @@ def quantize(value: Decimal, unit: Decimal) -> Decimal:
     return value.quantize(unit, rounding=ROUND_HALF_UP)
 
 
-def calculate_quote(*, transport_type: str, items_data: list[dict], air_rate_usd_per_kg: Decimal, sea_rate_usd_per_m3: Decimal, air_volumetric_factor: Decimal) -> dict:
+def calculate_quote(*, transport_type: str, items_data: list[dict], rate_usd: Decimal, volumetric_factor: Decimal) -> dict:
     item_results: list[ItemCalculation] = []
     total_actual_weight = Decimal("0")
     total_volumetric_weight = Decimal("0")
@@ -36,7 +36,7 @@ def calculate_quote(*, transport_type: str, items_data: list[dict], air_rate_usd
         height = Decimal(item["height_cm"])
 
         volume_cm3 = length * width * height
-        volumetric_weight = volume_cm3 / air_volumetric_factor
+        volumetric_weight = volume_cm3 / volumetric_factor
 
         total_actual_weight += weight
         total_volumetric_weight += volumetric_weight
@@ -55,15 +55,10 @@ def calculate_quote(*, transport_type: str, items_data: list[dict], air_rate_usd
 
     total_volume_m3 = total_volume_cm3 / ONE_MILLION
 
-    if transport_type == "AIR":
-        chargeable_basis = "WEIGHT" if total_actual_weight >= total_volumetric_weight else "VOLUME"
-        chargeable_value = total_actual_weight if chargeable_basis == "WEIGHT" else total_volumetric_weight
-        rate_usd = air_rate_usd_per_kg
-    else:
-        chargeable_basis = "VOLUME"
-        chargeable_value = total_volume_m3
-        rate_usd = sea_rate_usd_per_m3
-
+    _ = transport_type  # Se conserva para trazabilidad de llamadas.
+    # Regla de negocio: se cobra por la dimension mayor entre KG y M3 con tarifa unica.
+    chargeable_basis = "WEIGHT" if total_actual_weight >= total_volume_m3 else "VOLUME"
+    chargeable_value = total_actual_weight if chargeable_basis == "WEIGHT" else total_volume_m3
     total_usd = chargeable_value * rate_usd
 
     return {

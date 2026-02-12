@@ -8,6 +8,7 @@
 
 <div class="grid section">
     <div class="stat"><strong>Transporte</strong><span>{{ quote.get_transport_type_display }}</span></div>
+    <div class="stat"><strong>Origen</strong><span>{% if quote.origin_location %}{{ quote.origin_location.code }} - {{ quote.origin_location.name }}{% else %}-{% endif %}</span></div>
     <div class="stat"><strong>Piezas</strong><span>{{ quote.pieces_count }}</span></div>
     <div class="stat"><strong>Peso real total (kg)</strong><span>{{ quote.actual_weight_total_kg }}</span></div>
     <div class="stat"><strong>Peso volumetrico total (kg)</strong><span>{{ quote.volumetric_weight_total_kg }}</span></div>

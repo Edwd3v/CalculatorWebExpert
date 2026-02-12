@@ -69,15 +69,22 @@ python manage.py runserver
 - Admin (`is_staff=True`):
   - Puede acceder al panel de control.
   - Puede crear usuarios.
-  - Puede editar tarifas globales (aerea, maritima y factor volumetrico).
+  - Puede crear aeropuertos/puertos y definir una tarifa unica por origen.
   - Puede ver el historial completo de todos los usuarios.
 
-## Configuracion de tarifas y factor volumetrico
+## Tarifas por origen y vigencia
+
+- Cada cotizacion usa un origen (aeropuerto o puerto).
+- El sistema toma la tarifa vigente del origen a la fecha actual.
+- La vigencia inicia al crear la tarifa y termina automaticamente cuando se registra una nueva tarifa para el mismo origen.
+- Regla de cobro para aereo y maritimo:
+  - Compara `peso_total_kg` vs `volumen_total_m3`.
+  - Cobra la dimension mayor usando la misma tarifa unica.
+
+## Configuracion base
 
 En `freight_quote/settings.py`:
 
-- `AIR_RATE_USD_PER_KG`
-- `SEA_RATE_USD_PER_M3`
 - `AIR_VOLUMETRIC_FACTOR`
 
 ## Tests

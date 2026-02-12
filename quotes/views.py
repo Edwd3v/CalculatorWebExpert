@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal
 
 from django.conf import settings
@@ -5,21 +6,21 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
-from .forms import AdminUserCreationForm, FreightRateConfigForm, QuoteForm, QuoteItemFormSet
-from .models import FreightRateConfig, Quote, QuoteItem
+from .forms import AdminUserCreationForm, LocationRateForm, OriginLocationForm, QuoteForm, QuoteItemFormSet
+from .models import LocationRate, OriginLocation, Quote, QuoteItem
 from .services.calculation import calculate_quote
 
 
-def get_rate_config() -> FreightRateConfig:
-    config = FreightRateConfig.objects.order_by("id").first()
-    if config:
-        return config
-    return FreightRateConfig.objects.create(
-        air_rate_usd_per_kg=Decimal(str(settings.AIR_RATE_USD_PER_KG)),
-        sea_rate_usd_per_m3=Decimal(str(settings.SEA_RATE_USD_PER_M3)),
-        air_volumetric_factor=Decimal(str(settings.AIR_VOLUMETRIC_FACTOR)),
+def get_effective_rate(*, location: OriginLocation, on_date: date | None = None) -> LocationRate | None:
+    target_date = on_date or date.today()
+    return (
+        LocationRate.objects.filter(location=location, is_active=True, effective_from__lte=target_date)
+        .filter(Q(effective_to__isnull=True) | Q(effective_to__gte=target_date))
+        .order_by("-effective_from", "-id")
+        .first()
     )
 
 
@@ -39,18 +40,24 @@ def new_quote(request):
                 )
                 return render(request, "quotes/new_quote.html", {"form": form, "formset": formset})
 
-            rate_config = get_rate_config()
+            origin_location = form.cleaned_data["origin_location"]
+            applied_rate = get_effective_rate(location=origin_location)
+            if not applied_rate:
+                form.add_error("origin_location", "No existe una tarifa vigente para el origen seleccionado.")
+                return render(request, "quotes/new_quote.html", {"form": form, "formset": formset})
+
             result = calculate_quote(
                 transport_type=form.cleaned_data["transport_type"],
                 items_data=items_data,
-                air_rate_usd_per_kg=rate_config.air_rate_usd_per_kg,
-                sea_rate_usd_per_m3=rate_config.sea_rate_usd_per_m3,
-                air_volumetric_factor=rate_config.air_volumetric_factor,
+                rate_usd=applied_rate.rate_usd,
+                volumetric_factor=Decimal(str(settings.AIR_VOLUMETRIC_FACTOR)),
             )
 
             with transaction.atomic():
                 quote = Quote.objects.create(
                     user=request.user,
+                    origin_location=origin_location,
+                    applied_rate=applied_rate,
                     transport_type=form.cleaned_data["transport_type"],
                     pieces_count=expected_pieces,
                     actual_weight_total_kg=result["actual_weight_total_kg"],
@@ -84,13 +91,15 @@ def new_quote(request):
 
 @login_required
 def quote_result(request, quote_id: int):
-    quote_query = Quote.objects.prefetch_related("items")
+    quote_query = Quote.objects.select_related("origin_location", "applied_rate").prefetch_related("items")
     if request.user.is_staff:
         quote = get_object_or_404(quote_query, id=quote_id)
     else:
         quote = get_object_or_404(quote_query, id=quote_id, user=request.user)
     basis_message = (
-        "La carga se cotiza por PESO" if quote.chargeable_basis == Quote.ChargeableBasis.WEIGHT else "La carga se cotiza por VOLUMEN"
+        "Se cobra por KG (total mayor que M3 en costo)"
+        if quote.chargeable_basis == Quote.ChargeableBasis.WEIGHT
+        else "Se cobra por M3 (total mayor que KG en costo)"
     )
     return render(request, "quotes/result.html", {"quote": quote, "basis_message": basis_message})
 
@@ -98,9 +107,9 @@ def quote_result(request, quote_id: int):
 @login_required
 def quote_history(request):
     if request.user.is_staff:
-        quotes = Quote.objects.select_related("user").prefetch_related("items")
+        quotes = Quote.objects.select_related("user", "origin_location").prefetch_related("items")
     else:
-        quotes = Quote.objects.filter(user=request.user).prefetch_related("items")
+        quotes = Quote.objects.filter(user=request.user).select_related("origin_location").prefetch_related("items")
     return render(request, "quotes/history.html", {"quotes": quotes, "is_admin": request.user.is_staff})
 
 
@@ -115,6 +124,8 @@ def admin_panel(request):
         "total_users": user_model.objects.filter(is_active=True).count(),
         "admin_users": user_model.objects.filter(is_active=True, is_staff=True).count(),
         "total_quotes": Quote.objects.count(),
+        "total_airports": OriginLocation.objects.filter(location_type=OriginLocation.LocationType.AIRPORT, is_active=True).count(),
+        "total_seaports": OriginLocation.objects.filter(location_type=OriginLocation.LocationType.SEAPORT, is_active=True).count(),
     }
     return render(request, "quotes/admin_panel.html", {"stats": stats})
 
@@ -125,19 +136,61 @@ def admin_rates(request):
         messages.error(request, "No tienes permisos para acceder al panel de administracion.")
         return redirect("quotes:new_quote")
 
-    rate_config = get_rate_config()
     if request.method == "POST":
-        rates_form = FreightRateConfigForm(request.POST, instance=rate_config)
-        if rates_form.is_valid():
-            rate = rates_form.save(commit=False)
-            rate.updated_by = request.user
-            rate.save()
-            messages.success(request, "Tarifas globales actualizadas.")
-            return redirect("quotes:admin_rates")
+        if "create_location" in request.POST:
+            location_form = OriginLocationForm(request.POST, prefix="loc")
+            rate_form = LocationRateForm(prefix="rate")
+            if location_form.is_valid():
+                location_form.save()
+                messages.success(request, "Origen creado correctamente.")
+                return redirect("quotes:admin_rates")
+        elif "create_rate" in request.POST:
+            rate_form = LocationRateForm(request.POST, prefix="rate")
+            location_form = OriginLocationForm(prefix="loc")
+            if rate_form.is_valid():
+                location = rate_form.cleaned_data["location"]
+                rate_value = rate_form.cleaned_data["rate_usd"]
+                today = date.today()
+                # Cierra vigencia previa activa del mismo origen cuando entra una nueva tarifa.
+                LocationRate.objects.filter(
+                    location=location,
+                    is_active=True,
+                    effective_to__isnull=True,
+                ).update(effective_to=today, is_active=False)
+                new_rate = LocationRate(
+                    location=location,
+                    usd_per_kg=rate_value,
+                    usd_per_m3=rate_value,
+                    effective_from=today,
+                    is_active=True,
+                )
+                new_rate.updated_by = request.user
+                new_rate.save()
+                messages.success(request, "Tarifa creada correctamente.")
+                return redirect("quotes:admin_rates")
+        else:
+            location_form = OriginLocationForm(prefix="loc")
+            rate_form = LocationRateForm(prefix="rate")
     else:
-        rates_form = FreightRateConfigForm(instance=rate_config)
+        location_form = OriginLocationForm(prefix="loc")
+        rate_form = LocationRateForm(prefix="rate")
 
-    return render(request, "quotes/admin_rates.html", {"rates_form": rates_form, "rate_config": rate_config})
+    airports = OriginLocation.objects.filter(location_type=OriginLocation.LocationType.AIRPORT).order_by("code")
+    seaports = OriginLocation.objects.filter(location_type=OriginLocation.LocationType.SEAPORT).order_by("code")
+    today = date.today()
+    airports_with_rates = [(location, get_effective_rate(location=location, on_date=today)) for location in airports]
+    seaports_with_rates = [(location, get_effective_rate(location=location, on_date=today)) for location in seaports]
+
+    return render(
+        request,
+        "quotes/admin_rates.html",
+        {
+            "location_form": location_form,
+            "rate_form": rate_form,
+            "airports_with_rates": airports_with_rates,
+            "seaports_with_rates": seaports_with_rates,
+        },
+    )
 
 
 @login_required
@@ -165,7 +218,7 @@ def admin_history(request):
         messages.error(request, "No tienes permisos para acceder al panel de administracion.")
         return redirect("quotes:new_quote")
 
-    recent_quotes = Quote.objects.select_related("user").prefetch_related("items").order_by("-created_at")[:30]
+    recent_quotes = Quote.objects.select_related("user", "origin_location").prefetch_related("items").order_by("-created_at")[:30]
     return render(request, "quotes/admin_history.html", {"recent_quotes": recent_quotes})
 
 
