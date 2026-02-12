@@ -1,0 +1,149 @@
+PROYECTO: APLICACIÓN WEB DE COTIZADOR DE FLETES (DJANGO)
+
+Actúa como un Senior Python Developer experto en Django, arquitectura limpia, buenas prácticas, seguridad y experiencia de usuario para aplicaciones internas empresariales.
+
+OBJETIVO DEL PROYECTO (MVP)
+
+Desarrollar una aplicación web en Django que permita al área comercial estimar el valor de un flete internacional según las características de una carga.
+
+El sistema debe:
+
+1. Permitir autenticación de usuarios (cada comercial tiene credenciales propias).
+2. Permitir crear cotizaciones ingresando:
+
+   * Tipo de transporte (AÉREO o MARÍTIMO)
+   * Cantidad de piezas
+   * Peso por pieza (kg)
+   * Dimensiones por pieza (largo, ancho y alto en cm)
+3. Calcular automáticamente:
+
+   * Peso real total
+   * Volumen total
+   * Peso volumétrico (para transporte aéreo)
+4. Determinar si la carga se cobra por peso o por volumen.
+5. Mostrar el total en USD.
+6. Guardar cada cotización en base de datos.
+
+CONTEXTO DE NEGOCIO
+
+En transporte aéreo, la aerolínea cobra según el mayor valor entre:
+
+* Peso real total (kg)
+* Peso volumétrico total (kg)
+
+La aplicación debe calcular ambos valores y seleccionar automáticamente el mayor como “base de cobro”.
+
+El sistema debe mostrar un mensaje claro indicando:
+“La carga se cotiza por PESO” o
+“La carga se cotiza por VOLUMEN”
+
+REGLAS DE CÁLCULO
+
+UNIDADES:
+
+* Dimensiones en centímetros
+* Peso en kilogramos
+
+VOLUMEN POR PIEZA:
+Volumen = Largo * Ancho * Alto (en cm3)
+
+VOLUMEN TOTAL:
+Suma de todos los volúmenes.
+
+CONVERSIÓN A METROS CÚBICOS:
+m3 = cm3 / 1,000,000
+
+PESO VOLUMÉTRICO (AÉREO):
+PesoVol = (Largo * Ancho * Alto) / FACTOR_VOLUMÉTRICO
+
+El FACTOR_VOLUMÉTRICO debe ser configurable desde settings.py (por ejemplo 6000).
+
+PESO COBRADO:
+PesoCobrado = máximo entre PesoRealTotal y PesoVolumétricoTotal
+
+TARIFAS
+
+Las tarifas deben ser configurables desde settings.py:
+
+* AIR_RATE_USD_PER_KG
+* SEA_RATE_USD_PER_M3
+* AIR_VOLUMETRIC_FACTOR
+
+En este MVP se pueden usar valores de prueba definidos en settings.
+
+TRM USD A COP
+
+No aplica en este MVP. La cotización es únicamente en USD.
+
+MODELOS MÍNIMOS
+
+Modelo Quote:
+
+* user (ForeignKey)
+* transport_type (AIR o SEA)
+* pieces_count
+* actual_weight_total_kg
+* volumetric_weight_total_kg
+* volume_total_m3
+* chargeable_basis (WEIGHT o VOLUME)
+* chargeable_value
+* rate_usd
+* total_usd
+* created_at
+
+Modelo QuoteItem:
+
+* quote (ForeignKey)
+* weight_kg
+* length_cm
+* width_cm
+* height_cm
+* volume_cm3
+* volumetric_weight_kg
+
+REQUERIMIENTOS TÉCNICOS
+
+* Django (no SPA).
+* Django Authentication.
+* SQLite o PostgreSQL.
+* App llamada “quotes”.
+* Arquitectura limpia.
+* Separar lógica de cálculo en un servicio independiente (no dentro de la vista).
+* Usar Decimal para cálculos monetarios, no float.
+* Validaciones estrictas:
+
+  * Todos los valores deben ser mayores que cero.
+  * Cantidad de piezas entre 1 y 200.
+  * Dimensiones en rango razonable.
+  * Manejo claro de errores.
+
+PANTALLAS
+
+1. Login
+2. Nueva cotización
+3. Resultado con desglose claro
+4. (Opcional recomendado) Historial de cotizaciones por usuario
+
+CRITERIOS DE ACEPTACIÓN
+
+* El usuario puede iniciar sesión.
+* Puede crear una cotización con múltiples piezas.
+* El sistema determina correctamente si se cobra por peso o volumen.
+* Muestra total en USD.
+* Guarda cotización y detalle de piezas.
+* Se puede ejecutar localmente con instrucciones claras.
+
+ENTREGABLES ESPERADOS
+
+* Estructura completa del proyecto.
+* Modelos y migraciones.
+* Formularios.
+* Vistas.
+* Templates básicos.
+* Servicio de cálculo.
+* Sin integración TRM.
+* Tests unitarios para cálculos.
+* Instrucciones para correr el proyecto localmente (venv, migrate, createsuperuser, runserver).
+
+FIN DEL PROMPT.
+

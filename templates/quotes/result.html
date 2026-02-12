@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Resultado{% endblock %}
+{% block content %}
+<div class="page-title">
+    <h1>Resultado de cotizacion #{{ quote.id }}</h1>
+    <p class="subtle">{{ basis_message }}</p>
+</div>
+
+<div class="grid section">
+    <div class="stat"><strong>Transporte</strong><span>{{ quote.get_transport_type_display }}</span></div>
+    <div class="stat"><strong>Piezas</strong><span>{{ quote.pieces_count }}</span></div>
+    <div class="stat"><strong>Peso real total (kg)</strong><span>{{ quote.actual_weight_total_kg }}</span></div>
+    <div class="stat"><strong>Peso volumetrico total (kg)</strong><span>{{ quote.volumetric_weight_total_kg }}</span></div>
+    <div class="stat"><strong>Volumen total (m3)</strong><span>{{ quote.volume_total_m3 }}</span></div>
+    <div class="stat"><strong>Base de cobro</strong><span>{{ quote.get_chargeable_basis_display }}</span></div>
+    <div class="stat"><strong>Valor cobrable</strong><span>{{ quote.chargeable_value }}</span></div>
+    <div class="stat"><strong>Tarifa USD</strong><span>{{ quote.rate_usd }}</span></div>
+    <div class="stat"><strong>Total USD</strong><span>{{ quote.total_usd }}</span></div>
+</div>
+
+<div class="section">
+    <h2>Detalle de piezas</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Peso (kg)</th>
+                <th>Largo (cm)</th>
+                <th>Ancho (cm)</th>
+                <th>Alto (cm)</th>
+                <th>Volumen (cm3)</th>
+                <th>Peso volumetrico (kg)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in quote.items.all %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ item.weight_kg }}</td>
+                <td>{{ item.length_cm }}</td>
+                <td>{{ item.width_cm }}</td>
+                <td>{{ item.height_cm }}</td>
+                <td>{{ item.volume_cm3 }}</td>
+                <td>{{ item.volumetric_weight_kg }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Cotizador{% endblock %}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap');
+        :root {
+            --bg: #f4f1ec;
+            --bg-strong: #e7ddd2;
+            --ink: #1f1b16;
+            --ink-soft: #5a4f45;
+            --accent: #0d3b2e;
+            --accent-2: #c7702a;
+            --card: #fffdf9;
+            --border: #e6d9cc;
+            --shadow: 0 18px 50px rgba(17, 12, 8, 0.12);
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: "IBM Plex Sans", sans-serif;
+            margin: 0;
+            color: var(--ink);
+            background: radial-gradient(circle at 10% 10%, #fdf7ee, var(--bg));
+        }
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            backdrop-filter: blur(6px);
+            background: rgba(253, 247, 238, 0.85);
+            border-bottom: 1px solid var(--border);
+        }
+        .nav {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px;
+        }
+        .brand {
+            font-family: "Space Grotesk", sans-serif;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 18px;
+        }
+        .nav-links a {
+            color: var(--ink);
+            text-decoration: none;
+            margin-left: 16px;
+            font-weight: 500;
+        }
+        .nav-links form {
+            display: inline;
+            margin: 0;
+        }
+        .link-btn {
+            background: none;
+            border: none;
+            color: var(--ink);
+            margin-left: 16px;
+            font-weight: 500;
+            font: inherit;
+            cursor: pointer;
+            padding: 0;
+        }
+        .nav-links a:hover { color: var(--accent-2); }
+        .link-btn:hover { color: var(--accent-2); }
+        main {
+            max-width: 1100px;
+            margin: 28px auto 60px;
+            padding: 0 20px;
+        }
+        .card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 28px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+        .page-title h1 {
+            font-family: "Space Grotesk", sans-serif;
+            font-size: 28px;
+            margin: 0 0 8px;
+        }
+        h2 {
+            font-family: "Space Grotesk", sans-serif;
+            font-size: 20px;
+            margin: 0 0 8px;
+        }
+        .subtle { color: var(--ink-soft); margin: 0; }
+        .section { margin-top: 22px; }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+            margin-top: 16px;
+        }
+        .field label { display: block; font-weight: 600; margin-bottom: 6px; }
+        input, select {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: #fff;
+            font-size: 14px;
+        }
+        input:focus, select:focus {
+            outline: 2px solid rgba(199, 112, 42, 0.25);
+            border-color: var(--accent-2);
+        }
+        .help { color: var(--ink-soft); font-size: 12px; margin-top: 6px; display: block; }
+        .errorlist { color: #b42318; margin: 6px 0 0; padding: 0; list-style: none; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(160px, 1fr));
+            gap: 14px;
+        }
+        .stat {
+            padding: 14px;
+            background: #fdf6ec;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+        .stat strong { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--ink-soft); }
+        .stat span { font-weight: 600; font-size: 16px; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 14px;
+            background: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: #f2e8dc; font-weight: 600; font-size: 13px; }
+        tr:last-child td { border-bottom: none; }
+        .btn {
+            border: none;
+            background: var(--accent);
+            color: #fff;
+            padding: 12px 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn:hover { background: #0a2f25; }
+        .btn-secondary { background: #c8b4a0; color: var(--ink); }
+        .actions { display: flex; gap: 12px; margin-top: 20px; }
+        .muted { color: var(--ink-soft); font-size: 13px; }
+        .alert {
+            margin: 12px 0 20px;
+            padding: 12px 14px;
+            border-radius: 10px;
+            background: #e9f6ef;
+            color: #0b5a3c;
+            border: 1px solid #c9ead8;
+        }
+        @media (max-width: 900px) {
+            .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .form-grid { grid-template-columns: 1fr; }
+            .nav { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .nav-links a { margin-left: 0; margin-right: 14px; }
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="nav">
+        <a class="brand" href="{% url 'quotes:new_quote' %}">COTIZADOR</a>
+        <div class="nav-links">
+            {% if user.is_authenticated %}
+                <a href="{% url 'quotes:new_quote' %}">Nueva cotizacion</a>
+                <a href="{% url 'quotes:quote_history' %}">Historial</a>
+                {% if user.is_staff %}
+                    <a href="{% url 'quotes:admin_panel' %}">Panel admin</a>
+                {% endif %}
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button class="link-btn" type="submit">Salir</button>
+                </form>
+            {% else %}
+                <a href="{% url 'login' %}">Login</a>
+            {% endif %}
+        </div>
+    </div>
+</header>
+<main>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+    <div class="card">
+        {% block content %}{% endblock %}
+    </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% block title %}Nueva cotizacion{% endblock %}
+{% block content %}
+<div class="page-title">
+    <h1>Nueva cotizacion</h1>
+    <p class="subtle">Cotiza tus piezas en USD. El formulario de piezas se ajusta automaticamente.</p>
+</div>
+
+<form method="post" id="quote-form">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+
+    <div class="form-grid">
+        <div class="field">
+            <label for="{{ form.transport_type.id_for_label }}">Tipo de transporte</label>
+            {{ form.transport_type }}
+            {{ form.transport_type.errors }}
+        </div>
+        <div class="field">
+            <label for="{{ form.pieces_count.id_for_label }}">Cantidad de piezas</label>
+            {{ form.pieces_count }}
+            {{ form.pieces_count.errors }}
+            <span class="help">{{ form.pieces_count.help_text }}</span>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Piezas</h2>
+        <p class="subtle">Completa los datos de cada pieza (peso y dimensiones).</p>
+        {{ formset.non_form_errors }}
+        {{ formset.management_form }}
+
+        <table id="items-table">
+            <thead>
+                <tr>
+                    <th>Peso (kg)</th>
+                    <th>Largo (cm)</th>
+                    <th>Ancho (cm)</th>
+                    <th>Alto (cm)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item_form in formset %}
+                <tr class="item-row">
+                    <td>{{ item_form.weight_kg.errors }}{{ item_form.weight_kg }}</td>
+                    <td>{{ item_form.length_cm.errors }}{{ item_form.length_cm }}</td>
+                    <td>{{ item_form.width_cm.errors }}{{ item_form.width_cm }}</td>
+                    <td>{{ item_form.height_cm.errors }}{{ item_form.height_cm }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="actions">
+        <button class="btn" type="submit">Calcular y guardar</button>
+    </div>
+</form>
+
+<template id="empty-form-template">
+    <tr class="item-row">
+        <td>{{ formset.empty_form.weight_kg }}</td>
+        <td>{{ formset.empty_form.length_cm }}</td>
+        <td>{{ formset.empty_form.width_cm }}</td>
+        <td>{{ formset.empty_form.height_cm }}</td>
+    </tr>
+</template>
+
+<script>
+(function () {
+    const piecesInput = document.getElementById('id_pieces_count');
+    const totalFormsInput = document.getElementById('id_items-TOTAL_FORMS');
+    const tbody = document.querySelector('#items-table tbody');
+    const template = document.getElementById('empty-form-template').innerHTML;
+
+    function clampCount(value) {
+        if (Number.isNaN(value)) {
+            return 1;
+        }
+        return Math.max(1, Math.min(200, value));
+    }
+
+    function syncRows(targetCount) {
+        const currentRows = tbody.querySelectorAll('.item-row').length;
+        if (targetCount > currentRows) {
+            for (let i = currentRows; i < targetCount; i += 1) {
+                const rowHtml = template.replaceAll('__prefix__', i.toString());
+                tbody.insertAdjacentHTML('beforeend', rowHtml);
+            }
+        } else if (targetCount < currentRows) {
+            for (let i = currentRows; i > targetCount; i -= 1) {
+                const row = tbody.querySelector('.item-row:last-child');
+                if (row) {
+                    row.remove();
+                }
+            }
+        }
+        totalFormsInput.value = targetCount;
+    }
+
+    function handlePiecesChange() {
+        const desired = clampCount(parseInt(piecesInput.value, 10));
+        if (piecesInput.value !== desired.toString()) {
+            piecesInput.value = desired.toString();
+        }
+        syncRows(desired);
+    }
+
+    piecesInput.addEventListener('change', handlePiecesChange);
+    piecesInput.addEventListener('input', handlePiecesChange);
+    handlePiecesChange();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Historial{% endblock %}
+{% block content %}
+<h1>Historial de cotizaciones</h1>
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Fecha</th>
+            {% if is_admin %}<th>Usuario</th>{% endif %}
+            <th>Transporte</th>
+            <th>Base</th>
+            <th>Total USD</th>
+            <th>Ver</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for quote in quotes %}
+        <tr>
+            <td>{{ quote.id }}</td>
+            <td>{{ quote.created_at }}</td>
+            {% if is_admin %}<td>{{ quote.user.username }}</td>{% endif %}
+            <td>{{ quote.get_transport_type_display }}</td>
+            <td>{{ quote.get_chargeable_basis_display }}</td>
+            <td>{{ quote.total_usd }}</td>
+            <td><a href="{% url 'quotes:quote_result' quote_id=quote.id %}">Detalle</a></td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="{% if is_admin %}7{% else %}6{% endif %}">No hay cotizaciones aun.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

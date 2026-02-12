@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block title %}Panel admin{% endblock %}
+{% block content %}
+<div class="page-title">
+    <h1>Panel de control</h1>
+    <p class="subtle">Gestion de usuarios y tarifas globales.</p>
+</div>
+
+<div class="section">
+    <h2>Tarifas globales</h2>
+    <p class="muted">Estas tarifas aplican a todas las cotizaciones nuevas.</p>
+    <form method="post">
+        {% csrf_token %}
+        {{ rates_form.as_p }}
+        <button class="btn" type="submit" name="update_rates" value="1">Guardar tarifas</button>
+    </form>
+    <p class="muted">Ultima actualizacion: {{ rate_config.updated_at }}{% if rate_config.updated_by %} por {{ rate_config.updated_by.username }}{% endif %}</p>
+</div>
+
+<div class="section">
+    <h2>Crear usuario</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ user_form.as_p }}
+        <button class="btn" type="submit" name="create_user" value="1">Crear usuario</button>
+    </form>
+</div>
+
+<div class="section">
+    <h2>Usuarios recientes</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Usuario</th>
+                <th>Email</th>
+                <th>Rol</th>
+                <th>Fecha alta</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user_item in recent_users %}
+            <tr>
+                <td>{{ user_item.username }}</td>
+                <td>{{ user_item.email|default:"-" }}</td>
+                <td>{% if user_item.is_staff %}Admin{% else %}Usuario{% endif %}</td>
+                <td>{{ user_item.date_joined }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4">No hay usuarios activos.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
