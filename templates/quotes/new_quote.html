@@ -6,6 +6,77 @@
     <p class="subtle">Cotiza tus piezas en USD. El formulario de piezas se ajusta automaticamente.</p>
 </div>
 
+<style>
+    .transport-picker {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 6px;
+    }
+    .transport-option {
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: #fff;
+        padding: 14px;
+        text-align: left;
+        cursor: pointer;
+        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    }
+    .transport-option:hover {
+        border-color: var(--accent-2);
+        transform: translateY(-1px);
+    }
+    .transport-option.is-selected {
+        border-color: var(--accent);
+        background: #eef6f2;
+        box-shadow: inset 0 0 0 1px var(--accent);
+        animation: transport-pulse 260ms ease-out;
+    }
+    .transport-option .icon {
+        width: 30px;
+        height: 30px;
+        display: block;
+        color: var(--accent);
+        margin-bottom: 8px;
+    }
+    .transport-option strong {
+        display: block;
+        font-size: 15px;
+    }
+    .transport-option span {
+        color: var(--ink-soft);
+        font-size: 13px;
+    }
+    .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
+    @keyframes transport-pulse {
+        0% {
+            transform: scale(0.98);
+            box-shadow: inset 0 0 0 0 var(--accent);
+        }
+        70% {
+            transform: scale(1.01);
+            box-shadow: inset 0 0 0 1px var(--accent), 0 6px 18px rgba(13, 59, 46, 0.16);
+        }
+        100% {
+            transform: scale(1);
+            box-shadow: inset 0 0 0 1px var(--accent);
+        }
+    }
+    @media (max-width: 900px) {
+        .transport-picker { grid-template-columns: 1fr; }
+    }
+</style>
+
 <form method="post" id="quote-form">
     {% csrf_token %}
     {{ form.non_field_errors }}
@@ -13,7 +84,28 @@
     <div class="form-grid">
         <div class="field">
             <label for="{{ form.transport_type.id_for_label }}">Tipo de transporte</label>
-            {{ form.transport_type }}
+            <div class="transport-picker" id="transport-picker">
+                <button type="button" class="transport-option" data-transport="AIR">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M2 13.5L10 12L21 5.5L19.5 4L10.5 8L7 5H5L6 9L2.5 11L2 13.5Z" fill="currentColor"/>
+                        <path d="M10.5 12.5L14.5 18H12.5L9.5 14.5L10.5 12.5Z" fill="currentColor"/>
+                    </svg>
+                    <strong>Aereo</strong>
+                    <span>Tarifa por kg cobrable.</span>
+                </button>
+                <button type="button" class="transport-option" data-transport="SEA">
+                    <svg class="icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M3 14H21L18 9H6L3 14Z" fill="currentColor"/>
+                        <path d="M7 9V6H12V9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                        <path d="M3 17C4.4 18.3 5.8 18.3 7.2 17C8.6 15.7 10 15.7 11.4 17C12.8 18.3 14.2 18.3 15.6 17C17 15.7 18.4 15.7 19.8 17C20.5 17.6 21.2 17.9 22 18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                    </svg>
+                    <strong>Maritimo</strong>
+                    <span>Tarifa por m3 de volumen.</span>
+                </button>
+            </div>
+            <div class="sr-only">
+                {{ form.transport_type }}
+            </div>
             {{ form.transport_type.errors }}
         </div>
         <div class="field">
@@ -68,10 +160,31 @@
 
 <script>
 (function () {
+    const transportSelect = document.getElementById('id_transport_type');
+    const transportPicker = document.getElementById('transport-picker');
+    const transportButtons = transportPicker ? transportPicker.querySelectorAll('.transport-option') : [];
     const piecesInput = document.getElementById('id_pieces_count');
     const totalFormsInput = document.getElementById('id_items-TOTAL_FORMS');
     const tbody = document.querySelector('#items-table tbody');
     const template = document.getElementById('empty-form-template').innerHTML;
+
+    function syncTransportUI() {
+        if (!transportSelect) return;
+        transportButtons.forEach((btn) => {
+            const isSelected = btn.dataset.transport === transportSelect.value;
+            btn.classList.toggle('is-selected', isSelected);
+        });
+    }
+
+    if (transportSelect && transportButtons.length) {
+        transportButtons.forEach((btn) => {
+            btn.addEventListener('click', function () {
+                transportSelect.value = btn.dataset.transport;
+                syncTransportUI();
+            });
+        });
+        syncTransportUI();
+    }
 
     function clampCount(value) {
         if (Number.isNaN(value)) {
