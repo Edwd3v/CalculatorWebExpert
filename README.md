@@ -57,6 +57,9 @@ python manage.py runserver
 - Login: http://127.0.0.1:8000/login/
 - Admin: http://127.0.0.1:8000/admin/
 - Panel de control (usuario admin/staff): http://127.0.0.1:8000/control-panel/
+  - Tarifas: http://127.0.0.1:8000/control-panel/tarifas/
+  - Usuarios: http://127.0.0.1:8000/control-panel/usuarios/
+  - Historial operativo: http://127.0.0.1:8000/control-panel/historial/
 
 ## Roles y permisos
 

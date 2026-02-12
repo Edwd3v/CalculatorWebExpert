@@ -110,40 +110,63 @@ def admin_panel(request):
         messages.error(request, "No tienes permisos para acceder al panel de administracion.")
         return redirect("quotes:new_quote")
 
-    rate_config = get_rate_config()
+    user_model = get_user_model()
+    stats = {
+        "total_users": user_model.objects.filter(is_active=True).count(),
+        "admin_users": user_model.objects.filter(is_active=True, is_staff=True).count(),
+        "total_quotes": Quote.objects.count(),
+    }
+    return render(request, "quotes/admin_panel.html", {"stats": stats})
 
+
+@login_required
+def admin_rates(request):
+    if not request.user.is_staff:
+        messages.error(request, "No tienes permisos para acceder al panel de administracion.")
+        return redirect("quotes:new_quote")
+
+    rate_config = get_rate_config()
     if request.method == "POST":
-        if "update_rates" in request.POST:
-            rates_form = FreightRateConfigForm(request.POST, instance=rate_config)
-            user_form = AdminUserCreationForm()
-            if rates_form.is_valid():
-                rate = rates_form.save(commit=False)
-                rate.updated_by = request.user
-                rate.save()
-                messages.success(request, "Tarifas globales actualizadas.")
-                return redirect("quotes:admin_panel")
-        elif "create_user" in request.POST:
-            user_form = AdminUserCreationForm(request.POST)
-            rates_form = FreightRateConfigForm(instance=rate_config)
-            if user_form.is_valid():
-                user_form.save()
-                messages.success(request, "Usuario creado correctamente.")
-                return redirect("quotes:admin_panel")
-        else:
-            user_form = AdminUserCreationForm()
-            rates_form = FreightRateConfigForm(instance=rate_config)
+        rates_form = FreightRateConfigForm(request.POST, instance=rate_config)
+        if rates_form.is_valid():
+            rate = rates_form.save(commit=False)
+            rate.updated_by = request.user
+            rate.save()
+            messages.success(request, "Tarifas globales actualizadas.")
+            return redirect("quotes:admin_rates")
     else:
-        user_form = AdminUserCreationForm()
         rates_form = FreightRateConfigForm(instance=rate_config)
 
-    recent_users = (
-        get_user_model().objects.filter(is_active=True).order_by("-date_joined")[:10]
-    )
-    return render(
-        request,
-        "quotes/admin_panel.html",
-        {"user_form": user_form, "rates_form": rates_form, "rate_config": rate_config, "recent_users": recent_users},
-    )
+    return render(request, "quotes/admin_rates.html", {"rates_form": rates_form, "rate_config": rate_config})
+
+
+@login_required
+def admin_users(request):
+    if not request.user.is_staff:
+        messages.error(request, "No tienes permisos para acceder al panel de administracion.")
+        return redirect("quotes:new_quote")
+
+    if request.method == "POST":
+        user_form = AdminUserCreationForm(request.POST)
+        if user_form.is_valid():
+            user_form.save()
+            messages.success(request, "Usuario creado correctamente.")
+            return redirect("quotes:admin_users")
+    else:
+        user_form = AdminUserCreationForm()
+
+    recent_users = get_user_model().objects.filter(is_active=True).order_by("-date_joined")[:20]
+    return render(request, "quotes/admin_users.html", {"user_form": user_form, "recent_users": recent_users})
+
+
+@login_required
+def admin_history(request):
+    if not request.user.is_staff:
+        messages.error(request, "No tienes permisos para acceder al panel de administracion.")
+        return redirect("quotes:new_quote")
+
+    recent_quotes = Quote.objects.select_related("user").prefetch_related("items").order_by("-created_at")[:30]
+    return render(request, "quotes/admin_history.html", {"recent_quotes": recent_quotes})
 
 
 def home_redirect(request):

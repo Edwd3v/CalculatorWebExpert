@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Historial admin{% endblock %}
+{% block content %}
+<div class="page-title">
+    <h1>Historial operativo</h1>
+    <p class="subtle">Vista de las cotizaciones recientes del sistema.</p>
+</div>
+
+<div class="section">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Usuario</th>
+                <th>Transporte</th>
+                <th>Base</th>
+                <th>Total USD</th>
+                <th>Fecha</th>
+                <th>Ver</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for quote in recent_quotes %}
+            <tr>
+                <td>{{ quote.id }}</td>
+                <td>{{ quote.user.username }}</td>
+                <td>{{ quote.get_transport_type_display }}</td>
+                <td>{{ quote.get_chargeable_basis_display }}</td>
+                <td>{{ quote.total_usd }}</td>
+                <td>{{ quote.created_at }}</td>
+                <td><a href="{% url 'quotes:quote_result' quote_id=quote.id %}">Detalle</a></td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7">No hay cotizaciones.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <div class="actions">
+        <a class="btn btn-secondary" href="{% url 'quotes:admin_panel' %}">Volver al panel</a>
+        <a class="btn" href="{% url 'quotes:quote_history' %}">Ver historial completo</a>
+    </div>
+</div>
+{% endblock %}

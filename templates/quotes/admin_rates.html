@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Tarifas globales{% endblock %}
+{% block content %}
+<div class="page-title">
+    <h1>Tarifas globales</h1>
+    <p class="subtle">Los cambios aplican a todas las cotizaciones nuevas.</p>
+</div>
+
+<div class="section">
+    <form method="post">
+        {% csrf_token %}
+        {{ rates_form.as_p }}
+        <div class="actions">
+            <button class="btn" type="submit">Guardar tarifas</button>
+            <a class="btn btn-secondary" href="{% url 'quotes:admin_panel' %}">Volver al panel</a>
+        </div>
+    </form>
+    <p class="muted">Ultima actualizacion: {{ rate_config.updated_at }}{% if rate_config.updated_by %} por {{ rate_config.updated_by.username }}{% endif %}</p>
+</div>
+{% endblock %}

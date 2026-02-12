@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Gestion de usuarios{% endblock %}
+{% block content %}
+<div class="page-title">
+    <h1>Gestion de usuarios</h1>
+    <p class="subtle">Crea usuarios nuevos y define permisos administrativos.</p>
+</div>
+
+<div class="section">
+    <form method="post">
+        {% csrf_token %}
+        {{ user_form.as_p }}
+        <div class="actions">
+            <button class="btn" type="submit">Crear usuario</button>
+            <a class="btn btn-secondary" href="{% url 'quotes:admin_panel' %}">Volver al panel</a>
+        </div>
+    </form>
+</div>
+
+<div class="section">
+    <h2>Usuarios recientes</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Usuario</th>
+                <th>Email</th>
+                <th>Rol</th>
+                <th>Fecha alta</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user_item in recent_users %}
+            <tr>
+                <td>{{ user_item.username }}</td>
+                <td>{{ user_item.email|default:"-" }}</td>
+                <td>{% if user_item.is_staff %}Admin{% else %}Usuario{% endif %}</td>
+                <td>{{ user_item.date_joined }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4">No hay usuarios activos.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

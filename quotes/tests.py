@@ -98,16 +98,16 @@ class QuotePermissionsAndAdminTests(TestCase):
 
     def test_non_admin_cannot_access_control_panel(self):
         self.client.login(username="user_a", password="userpass123")
-        response = self.client.get(reverse("quotes:admin_panel"), follow=True)
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "No tienes permisos")
+        for route_name in ("quotes:admin_panel", "quotes:admin_rates", "quotes:admin_users", "quotes:admin_history"):
+            response = self.client.get(reverse(route_name), follow=True)
+            self.assertEqual(response.status_code, 200)
+            self.assertContains(response, "No tienes permisos")
 
     def test_admin_can_create_user_from_control_panel(self):
         self.client.login(username="admin1", password="adminpass123")
         response = self.client.post(
-            reverse("quotes:admin_panel"),
+            reverse("quotes:admin_users"),
             {
-                "create_user": "1",
                 "username": "created_user",
                 "email": "created@example.com",
                 "first_name": "Created",
@@ -119,6 +119,22 @@ class QuotePermissionsAndAdminTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertTrue(get_user_model().objects.filter(username="created_user").exists())
+
+    def test_admin_can_update_rates_from_rates_page(self):
+        self.client.login(username="admin1", password="adminpass123")
+        response = self.client.post(
+            reverse("quotes:admin_rates"),
+            {
+                "air_rate_usd_per_kg": "7.2500",
+                "sea_rate_usd_per_m3": "180.0000",
+                "air_volumetric_factor": "5500.000",
+            },
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        config = FreightRateConfig.objects.order_by("-id").first()
+        self.assertIsNotNone(config)
+        self.assertEqual(config.air_rate_usd_per_kg, Decimal("7.2500"))
 
     def test_global_rates_are_used_for_new_quote(self):
         FreightRateConfig.objects.create(
