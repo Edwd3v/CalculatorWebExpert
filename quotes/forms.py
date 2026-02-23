@@ -6,15 +6,13 @@ from django.contrib.auth.forms import UserCreationForm
 from django.forms import BaseFormSet, formset_factory
 
 from .models import LocationRate, OriginLocation, Quote
+from .services.location_mapping import get_available_countries, resolve_country_entry_point
 
 
 class QuoteForm(forms.Form):
     transport_type = forms.ChoiceField(choices=Quote.TransportType.choices, label="Tipo de transporte")
-    origin_location = forms.ModelChoiceField(
-        queryset=OriginLocation.objects.none(),
-        label="Origen",
-        empty_label="Selecciona origen",
-    )
+    origin_country = forms.ChoiceField(choices=(), label="Pais de origen")
+    destination_country = forms.ChoiceField(choices=(), label="Pais de destino")
     pieces_count = forms.IntegerField(
         label="Cantidad de piezas",
         min_value=1,
@@ -24,18 +22,29 @@ class QuoteForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["origin_location"].queryset = OriginLocation.objects.filter(is_active=True).order_by("location_type", "name")
+        countries = get_available_countries()
+        country_choices = [("", "Selecciona pais")] + countries
+        self.fields["origin_country"].choices = country_choices
+        self.fields["destination_country"].choices = country_choices
 
     def clean(self):
         cleaned_data = super().clean()
         transport_type = cleaned_data.get("transport_type")
-        origin_location = cleaned_data.get("origin_location")
-        if not transport_type or not origin_location:
+        origin_country = cleaned_data.get("origin_country")
+        destination_country = cleaned_data.get("destination_country")
+        if not transport_type or not origin_country or not destination_country:
             return cleaned_data
 
-        expected_type = OriginLocation.LocationType.AIRPORT if transport_type == Quote.TransportType.AIR else OriginLocation.LocationType.SEAPORT
-        if origin_location.location_type != expected_type:
-            self.add_error("origin_location", "El origen seleccionado no corresponde al tipo de transporte.")
+        if not resolve_country_entry_point(country=origin_country, transport_type=transport_type, create_missing=False):
+            self.add_error(
+                "origin_country",
+                "No existe un punto de salida configurado para el pais de origen y tipo de transporte seleccionado.",
+            )
+        if not resolve_country_entry_point(country=destination_country, transport_type=transport_type, create_missing=False):
+            self.add_error(
+                "destination_country",
+                "No existe un punto de llegada configurado para el pais de destino y tipo de transporte seleccionado.",
+            )
         return cleaned_data
 
 
@@ -103,9 +112,10 @@ class OriginLocationForm(forms.ModelForm):
 
 
 class LocationRateForm(forms.Form):
-    location = forms.ModelChoiceField(queryset=OriginLocation.objects.none(), label="Origen")
+    transport_type = forms.ChoiceField(choices=Quote.TransportType.choices, label="Tipo de transporte")
+    country = forms.ChoiceField(choices=(), label="Pais")
     rate_usd = forms.DecimalField(label="Tarifa unica (USD)", min_value=Decimal("0.0001"), max_digits=12, decimal_places=4)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["location"].queryset = OriginLocation.objects.filter(is_active=True).order_by("location_type", "name")
+        self.fields["country"].choices = [("", "Selecciona pais")] + get_available_countries()

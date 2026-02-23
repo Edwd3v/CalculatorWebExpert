@@ -1,12 +1,241 @@
 {% extends 'base.html' %}
+{% load quotes_extras %}
 {% block title %}Historial admin{% endblock %}
 {% block content %}
+<style>
+    .page-title h1 {
+        color: #b45309;
+    }
+    .metrics-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 12px;
+    }
+    .metric-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 8px 18px rgba(180, 83, 9, 0.06);
+        padding: 12px;
+    }
+    .metric-label {
+        margin: 0;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #9a7a63;
+        font-weight: 600;
+    }
+    .metric-value {
+        margin: 6px 0 0;
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 27px;
+        line-height: 1;
+        color: #111827;
+        font-weight: 700;
+    }
+    .metric-value-sm {
+        margin: 6px 0 0;
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 18px;
+        line-height: 1.2;
+        color: #111827;
+        font-weight: 600;
+    }
+    .history-wrap {
+        border-radius: 16px;
+        background: linear-gradient(180deg, #fff8f2 0%, #ffffff 70%);
+        box-shadow: 0 14px 28px rgba(180, 83, 9, 0.08);
+        padding: 16px;
+    }
+    .filters-bar {
+        display: grid;
+        grid-template-columns: 1.4fr 0.9fr 0.9fr 0.9fr auto auto;
+        gap: 8px;
+        align-items: end;
+        margin-bottom: 10px;
+    }
+    .filter-field label {
+        display: block;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #6b7280;
+        margin-bottom: 4px;
+        font-weight: 600;
+    }
+    .filter-field input,
+    .filter-field select {
+        width: 100%;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        padding: 8px 10px;
+        font-size: 13px;
+        background: #fff;
+    }
+    .filter-field input:focus,
+    .filter-field select:focus {
+        outline: 2px solid rgba(180, 83, 9, 0.16);
+        border-color: #b45309;
+    }
+    .history-wrap table {
+        margin-top: 0;
+        border: none;
+    }
+    .history-wrap th {
+        background: #fff1e6;
+        color: #6b7280;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        border-bottom: 1px solid #ffedd5;
+    }
+    .history-wrap td {
+        border-bottom: none;
+        padding-top: 12px;
+        padding-bottom: 12px;
+        vertical-align: middle;
+    }
+    .history-wrap tbody tr:hover {
+        background: #fffbf7;
+    }
+    .transport-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border-radius: 999px;
+        padding: 4px 9px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+    }
+    .transport-badge svg {
+        width: 12px;
+        height: 12px;
+        fill: none;
+        stroke-width: 1.7;
+    }
+    .transport-air {
+        background: #e0f2fe;
+        color: #075985;
+    }
+    .transport-air svg {
+        stroke: #0369a1;
+    }
+    .transport-sea {
+        background: #dcfce7;
+        color: #166534;
+    }
+    .transport-sea svg {
+        stroke: #15803d;
+    }
+    .total-strong {
+        font-weight: 700;
+        color: #111827;
+    }
+    .btn {
+        background: #b45309;
+    }
+    .btn:hover {
+        background: #92400e;
+    }
+    .btn.btn-secondary {
+        background: #c4c9d1;
+        color: #111827;
+        border: 1px solid #9ca3af;
+    }
+    .btn.btn-secondary:hover {
+        background: #b5bcc6;
+    }
+    .btn.btn-compact {
+        padding: 10px 12px;
+        min-width: 96px;
+        font-size: 13px;
+        border-radius: 10px;
+    }
+    .pager {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-top: 10px;
+        color: #6b7280;
+        font-size: 12px;
+    }
+    .pager a {
+        color: #b45309;
+        text-decoration: none;
+        font-weight: 600;
+    }
+    @media (max-width: 980px) {
+        .metrics-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .filters-bar {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+    @media (max-width: 640px) {
+        .metrics-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
 <div class="page-title">
     <h1>Historial operativo</h1>
-    <p class="subtle">Vista de las cotizaciones recientes del sistema.</p>
+    <p class="subtle">Vista analitica de cotizaciones recientes y comportamiento semanal.</p>
 </div>
 
-<div class="section">
+<div class="metrics-grid">
+    <div class="metric-card">
+        <p class="metric-label">Cotizaciones (7 dias)</p>
+        <p class="metric-value">{{ metrics.weekly_total|es_number }}</p>
+    </div>
+    <div class="metric-card">
+        <p class="metric-label">Ticket Promedio USD</p>
+        <p class="metric-value">{{ metrics.weekly_avg|es_number }}</p>
+    </div>
+    <div class="metric-card">
+        <p class="metric-label">Ruta Mas Frecuente</p>
+        <p class="metric-value-sm">{{ metrics.top_route }}</p>
+    </div>
+    <div class="metric-card">
+        <p class="metric-label">Distribucion AIR / SEA</p>
+        <p class="metric-value-sm">{{ metrics.air_pct|es_number }}% / {{ metrics.sea_pct|es_number }}%</p>
+    </div>
+</div>
+
+<div class="section history-wrap">
+    <form method="get" class="filters-bar">
+        <div class="filter-field">
+            <label for="id_q">Buscar</label>
+            <input id="id_q" type="search" name="q" value="{{ filters.q }}" placeholder="Usuario o ruta...">
+        </div>
+        <div class="filter-field">
+            <label for="id_transport_type">Transporte</label>
+            <select id="id_transport_type" name="transport_type">
+                <option value="">Todos</option>
+                <option value="AIR" {% if filters.transport_type == "AIR" %}selected{% endif %}>Aereo</option>
+                <option value="SEA" {% if filters.transport_type == "SEA" %}selected{% endif %}>Maritimo</option>
+            </select>
+        </div>
+        <div class="filter-field">
+            <label for="id_date_from">Desde</label>
+            <input id="id_date_from" type="date" name="date_from" value="{{ filters.date_from }}">
+        </div>
+        <div class="filter-field">
+            <label for="id_date_to">Hasta</label>
+            <input id="id_date_to" type="date" name="date_to" value="{{ filters.date_to }}">
+        </div>
+        <button class="btn btn-compact" type="submit">Filtrar</button>
+        <a class="btn btn-secondary btn-compact" href="{% url 'quotes:admin_history' %}">Limpiar</a>
+    </form>
+
+    <div class="actions" style="margin-top: 0; margin-bottom: 10px;">
+        <a class="btn btn-compact" href="{% url 'quotes:admin_history' %}?{% if query_string %}{{ query_string }}&{% endif %}export=csv">Exportar CSV</a>
+    </div>
+
     <table>
         <thead>
             <tr>
@@ -14,6 +243,7 @@
                 <th>Usuario</th>
                 <th>Transporte</th>
                 <th>Origen</th>
+                <th>Destino</th>
                 <th>Base</th>
                 <th>Total USD</th>
                 <th>Fecha</th>
@@ -25,23 +255,58 @@
             <tr>
                 <td>{{ quote.id }}</td>
                 <td>{{ quote.user.username }}</td>
-                <td>{{ quote.get_transport_type_display }}</td>
-                <td>{% if quote.origin_location %}{{ quote.origin_location.code }}{% else %}-{% endif %}</td>
+                <td>
+                    {% if quote.transport_type == "AIR" %}
+                    <span class="transport-badge transport-air">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M2 13.5L10 12L21 5.5L19.5 4L10.5 8L7 5H5L6 9L2.5 11L2 13.5Z"></path>
+                            <path d="M10.5 12.5L14.5 18H12.5L9.5 14.5L10.5 12.5Z"></path>
+                        </svg>
+                        Aereo
+                    </span>
+                    {% else %}
+                    <span class="transport-badge transport-sea">
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M3 14H21L18 9H6L3 14Z"></path>
+                            <path d="M7 9V6H12V9"></path>
+                            <path d="M3 17C4.4 18.3 5.8 18.3 7.2 17C8.6 15.7 10 15.7 11.4 17C12.8 18.3 14.2 18.3 15.6 17C17 15.7 18.4 15.7 19.8 17C20.5 17.6 21.2 17.9 22 18"></path>
+                        </svg>
+                        Maritimo
+                    </span>
+                    {% endif %}
+                </td>
+                <td>{{ quote.origin_country|default:"-" }}</td>
+                <td>{{ quote.destination_country|default:"-" }}</td>
                 <td>{{ quote.get_chargeable_basis_display }}</td>
-                <td>{{ quote.total_usd }}</td>
-                <td>{{ quote.created_at }}</td>
+                <td><span class="total-strong">{{ quote.total_usd|es_number }}</span></td>
+                <td>{{ quote.created_at|date:"d/m/Y H:i" }}</td>
                 <td><a href="{% url 'quotes:quote_result' quote_id=quote.id %}">Detalle</a></td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="8">No hay cotizaciones.</td>
+                <td colspan="9">No hay cotizaciones.</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+
+    {% if page_obj %}
+    <div class="pager">
+        <div>Pagina {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</div>
+        <div>
+            {% if page_obj.has_previous %}
+                <a href="{% url 'quotes:admin_history' %}?{% if query_string %}{{ query_string }}&{% endif %}page={{ page_obj.previous_page_number }}">Anterior</a>
+            {% endif %}
+            {% if page_obj.has_next %}
+                <a href="{% url 'quotes:admin_history' %}?{% if query_string %}{{ query_string }}&{% endif %}page={{ page_obj.next_page_number }}">Siguiente</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
     <div class="actions">
-        <a class="btn btn-secondary" href="{% url 'quotes:admin_panel' %}">Volver al panel</a>
-        <a class="btn" href="{% url 'quotes:quote_history' %}">Ver historial completo</a>
+        <a class="btn btn-secondary btn-compact" href="{% url 'quotes:admin_panel' %}">Volver</a>
+        <a class="btn btn-compact" href="{% url 'quotes:quote_history' %}">Historial completo</a>
     </div>
 </div>
 {% endblock %}

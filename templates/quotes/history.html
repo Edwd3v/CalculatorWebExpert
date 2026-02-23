@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load quotes_extras %}
 {% block title %}Historial{% endblock %}
 {% block content %}
 <h1>Historial de cotizaciones</h1>
@@ -10,6 +11,7 @@
             {% if is_admin %}<th>Usuario</th>{% endif %}
             <th>Transporte</th>
             <th>Origen</th>
+            <th>Destino</th>
             <th>Base</th>
             <th>Total USD</th>
             <th>Ver</th>
@@ -22,14 +24,15 @@
             <td>{{ quote.created_at }}</td>
             {% if is_admin %}<td>{{ quote.user.username }}</td>{% endif %}
             <td>{{ quote.get_transport_type_display }}</td>
-            <td>{% if quote.origin_location %}{{ quote.origin_location.code }}{% else %}-{% endif %}</td>
+            <td>{{ quote.origin_country|default:"-" }}</td>
+            <td>{{ quote.destination_country|default:"-" }}</td>
             <td>{{ quote.get_chargeable_basis_display }}</td>
-            <td>{{ quote.total_usd }}</td>
+            <td>{{ quote.total_usd|es_number }}</td>
             <td><a href="{% url 'quotes:quote_result' quote_id=quote.id %}">Detalle</a></td>
         </tr>
         {% empty %}
         <tr>
-            <td colspan="{% if is_admin %}8{% else %}7{% endif %}">No hay cotizaciones aun.</td>
+            <td colspan="{% if is_admin %}9{% else %}8{% endif %}">No hay cotizaciones aun.</td>
         </tr>
         {% endfor %}
     </tbody>

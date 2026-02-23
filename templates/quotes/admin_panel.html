@@ -1,103 +1,272 @@
 {% extends 'base.html' %}
+{% load quotes_extras %}
 {% block title %}Panel admin{% endblock %}
 {% block content %}
 <style>
+    .dashboard-shell {
+        display: grid;
+        gap: 22px;
+    }
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+    }
+    .kpi-card {
+        background: #ffffff;
+        border-radius: 18px;
+        padding: 16px;
+        box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
+        display: grid;
+        gap: 8px;
+    }
+    .kpi-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .kpi-label {
+        margin: 0;
+        font-size: 12px;
+        color: #98a2b3;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+    }
+    .kpi-icon {
+        width: 20px;
+        height: 20px;
+        stroke: #667085;
+        fill: none;
+        stroke-width: 1.7;
+    }
+    .kpi-value {
+        margin: 0;
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 34px;
+        line-height: 1;
+        font-weight: 700;
+        color: #111827;
+    }
+    .coverage-strip {
+        background: #ffffff;
+        border-radius: 16px;
+        padding: 14px 16px;
+        box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .coverage-strip p {
+        margin: 0;
+        color: #667085;
+        font-size: 13px;
+    }
+    .coverage-strip strong {
+        color: #111827;
+        font-weight: 600;
+    }
     .module-grid {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 12px;
-        margin-top: 14px;
+        gap: 14px;
     }
     .module-card {
-        display: block;
+        display: grid;
+        gap: 12px;
         text-decoration: none;
         color: inherit;
-        border: 1px solid var(--border);
-        border-radius: 14px;
+        border-radius: 20px;
         background: #fff;
-        padding: 16px;
-        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+        padding: 18px;
+        box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
     .module-card:hover {
-        transform: translateY(-2px);
-        border-color: var(--accent-2);
-        box-shadow: 0 10px 24px rgba(16, 23, 18, 0.08);
+        transform: translateY(-3px);
+        box-shadow: 0 18px 32px rgba(15, 23, 42, 0.12);
     }
-    .module-card strong {
-        display: block;
+    .module-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+    }
+    .module-head strong {
         font-family: "Space Grotesk", sans-serif;
-        margin-bottom: 4px;
+        font-size: 20px;
+        color: #111827;
     }
-    .stats-grid {
-        margin-top: 14px;
-        display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 10px;
+    .module-desc {
+        margin: 0;
+        color: #667085;
+        font-size: 14px;
+        line-height: 1.45;
     }
-    .stat-box {
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 12px;
-        background: #f9f5ee;
-    }
-    .stat-box strong {
-        display: block;
+    .module-cta {
+        margin-top: 2px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: fit-content;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: #111827;
+        color: #fff;
         font-size: 12px;
-        color: var(--ink-soft);
-        text-transform: uppercase;
+        font-weight: 600;
     }
-    .stat-box span {
-        display: block;
-        font-size: 22px;
-        font-weight: 700;
-        font-family: "Space Grotesk", sans-serif;
+    .module-rates {
+        background: linear-gradient(180deg, #f5fbf8 0%, #ffffff 70%);
+        box-shadow: 0 14px 28px rgba(6, 95, 70, 0.10);
+    }
+    .module-rates .module-head strong {
+        color: #065f46;
+    }
+    .module-rates .module-arrow {
+        stroke: #065f46;
+    }
+    .module-rates .module-cta {
+        background: #065f46;
+    }
+    .module-users {
+        background: linear-gradient(180deg, #f8f8ff 0%, #ffffff 70%);
+        box-shadow: 0 14px 28px rgba(55, 48, 163, 0.10);
+    }
+    .module-users .module-head strong {
+        color: #3730a3;
+    }
+    .module-users .module-arrow {
+        stroke: #3730a3;
+    }
+    .module-users .module-cta {
+        background: #3730a3;
+    }
+    .module-history {
+        background: linear-gradient(180deg, #fff8f2 0%, #ffffff 70%);
+        box-shadow: 0 14px 28px rgba(180, 83, 9, 0.10);
+    }
+    .module-history .module-head strong {
+        color: #b45309;
+    }
+    .module-history .module-arrow {
+        stroke: #b45309;
+    }
+    .module-history .module-cta {
+        background: #b45309;
+    }
+    .module-arrow {
+        width: 18px;
+        height: 18px;
+        stroke: #98a2b3;
+        fill: none;
+        stroke-width: 1.8;
     }
     @media (max-width: 900px) {
+        .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .module-grid { grid-template-columns: 1fr; }
-        .stats-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) {
+        .kpi-grid { grid-template-columns: 1fr; }
     }
 </style>
 
 <div class="page-title">
     <h1>Panel de control</h1>
-    <p class="subtle">Selecciona un modulo para trabajar con foco en una sola tarea.</p>
+    <p class="subtle">Monitorea estado general y entra a cada modulo con un clic.</p>
 </div>
 
-<div class="module-grid">
-    <a class="module-card" href="{% url 'quotes:admin_rates' %}">
-        <strong>Tarifas</strong>
-        <span class="muted">Configuracion global de tarifa aerea, maritima y factor volumetrico.</span>
-    </a>
-    <a class="module-card" href="{% url 'quotes:admin_users' %}">
-        <strong>Usuarios</strong>
-        <span class="muted">Alta de usuarios y gestion de rol administrador.</span>
-    </a>
-    <a class="module-card" href="{% url 'quotes:admin_history' %}">
-        <strong>Historial</strong>
-        <span class="muted">Vista operativa de cotizaciones recientes del sistema.</span>
-    </a>
-</div>
+<div class="dashboard-shell">
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <div class="kpi-top">
+                <p class="kpi-label">Usuarios</p>
+                <svg class="kpi-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M16 20V18C16 16.9 15.1 16 14 16H6C4.9 16 4 16.9 4 18V20"></path>
+                    <circle cx="10" cy="10" r="3"></circle>
+                    <path d="M20 20V18.5C20 17.6 19.4 16.8 18.6 16.5"></path>
+                    <path d="M15.5 7.2C16.3 7.5 17 8.3 17 9.3C17 10.3 16.3 11.1 15.5 11.4"></path>
+                </svg>
+            </div>
+            <p class="kpi-value">{{ stats.total_users|es_number }}</p>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-top">
+                <p class="kpi-label">Admins</p>
+                <svg class="kpi-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 3L4 7V12C4 17 7.4 21.2 12 22C16.6 21.2 20 17 20 12V7L12 3Z"></path>
+                    <path d="M9 12L11 14L15 10"></path>
+                </svg>
+            </div>
+            <p class="kpi-value">{{ stats.admin_users|es_number }}</p>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-top">
+                <p class="kpi-label">Cotizaciones</p>
+                <svg class="kpi-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="4" y="3" width="16" height="18" rx="2"></rect>
+                    <path d="M8 7H16"></path>
+                    <path d="M8 11H16"></path>
+                    <path d="M8 15H13"></path>
+                </svg>
+            </div>
+            <p class="kpi-value">{{ stats.total_quotes|es_number }}</p>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-top">
+                <p class="kpi-label">Paises</p>
+                <svg class="kpi-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <path d="M3 12H21"></path>
+                    <path d="M12 3C9.5 5.5 9.5 18.5 12 21"></path>
+                    <path d="M12 3C14.5 5.5 14.5 18.5 12 21"></path>
+                </svg>
+            </div>
+            <p class="kpi-value">{{ stats.total_countries|es_number }}</p>
+        </div>
+    </div>
 
-<div class="stats-grid">
-    <div class="stat-box">
-        <strong>Usuarios activos</strong>
-        <span>{{ stats.total_users }}</span>
+    <div class="coverage-strip">
+        <p>Cobertura de tarifas AIR: <strong>{{ stats.countries_with_air_rate|es_number }}</strong> paises</p>
+        <p>Cobertura de tarifas SEA: <strong>{{ stats.countries_with_sea_rate|es_number }}</strong> paises</p>
     </div>
-    <div class="stat-box">
-        <strong>Admins</strong>
-        <span>{{ stats.admin_users }}</span>
-    </div>
-    <div class="stat-box">
-        <strong>Cotizaciones</strong>
-        <span>{{ stats.total_quotes }}</span>
-    </div>
-    <div class="stat-box">
-        <strong>Aeropuertos</strong>
-        <span>{{ stats.total_airports }}</span>
-    </div>
-    <div class="stat-box">
-        <strong>Puertos</strong>
-        <span>{{ stats.total_seaports }}</span>
+
+    <div class="module-grid">
+        <a class="module-card module-rates" href="{% url 'quotes:admin_rates' %}">
+            <div class="module-head">
+                <strong>Tarifas</strong>
+                <svg class="module-arrow" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M7 17L17 7"></path>
+                    <path d="M9 7H17V15"></path>
+                </svg>
+            </div>
+            <p class="module-desc">Configura tarifas por pais para aereo y maritimo, con vigencia automatica.</p>
+            <span class="module-cta">Ir a tarifas</span>
+        </a>
+        <a class="module-card module-users" href="{% url 'quotes:admin_users' %}">
+            <div class="module-head">
+                <strong>Usuarios</strong>
+                <svg class="module-arrow" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M7 17L17 7"></path>
+                    <path d="M9 7H17V15"></path>
+                </svg>
+            </div>
+            <p class="module-desc">Da de alta nuevos usuarios y administra permisos de acceso operativo.</p>
+            <span class="module-cta">Ir a usuarios</span>
+        </a>
+        <a class="module-card module-history" href="{% url 'quotes:admin_history' %}">
+            <div class="module-head">
+                <strong>Historial</strong>
+                <svg class="module-arrow" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M7 17L17 7"></path>
+                    <path d="M9 7H17V15"></path>
+                </svg>
+            </div>
+            <p class="module-desc">Revisa actividad reciente de cotizaciones para seguimiento y control.</p>
+            <span class="module-cta">Ir a historial</span>
+        </a>
     </div>
 </div>
 {% endblock %}

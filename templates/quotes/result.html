@@ -1,51 +1,258 @@
 {% extends 'base.html' %}
+{% load quotes_extras %}
 {% block title %}Resultado{% endblock %}
 {% block content %}
-<div class="page-title">
-    <h1>Resultado de cotizacion #{{ quote.id }}</h1>
-    <p class="subtle">{{ basis_message }}</p>
-</div>
+<style>
+    .result-shell {
+        max-width: 920px;
+        margin: 0 auto;
+        display: grid;
+        gap: 28px;
+    }
+    .result-kicker {
+        margin: 0;
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #98a2b3;
+        font-weight: 600;
+    }
+    .route-line {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+    .route-value {
+        margin: 0;
+        font-family: "Space Grotesk", sans-serif;
+        font-size: 30px;
+        line-height: 1.2;
+        color: #111827;
+    }
+    .route-icon {
+        width: 24px;
+        height: 24px;
+        stroke: #667085;
+        fill: none;
+        stroke-width: 1.6;
+    }
+    .critical-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1.2fr;
+        gap: 20px;
+        align-items: end;
+    }
+    .metric-label {
+        margin: 0 0 6px;
+        color: #98a2b3;
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        font-weight: 600;
+    }
+    .metric-value {
+        margin: 0;
+        color: #111827;
+        font-size: 28px;
+        font-weight: 600;
+        line-height: 1.15;
+    }
+    .metric-value-sm {
+        margin: 0;
+        color: #111827;
+        font-size: 20px;
+        font-weight: 600;
+        line-height: 1.2;
+    }
+    .total-line {
+        text-align: right;
+    }
+    .total-value {
+        margin: 0;
+        color: #111827;
+        font-size: 56px;
+        line-height: 1;
+        font-weight: 700;
+        font-family: "Space Grotesk", sans-serif;
+    }
+    .details-wrap {
+        padding-top: 10px;
+    }
+    .details-toggle {
+        cursor: pointer;
+        color: #344054;
+        font-weight: 600;
+        font-size: 15px;
+        list-style: none;
+    }
+    .details-toggle::-webkit-details-marker {
+        display: none;
+    }
+    .details-toggle::before {
+        content: "+";
+        display: inline-block;
+        width: 18px;
+        color: #667085;
+        font-weight: 700;
+    }
+    details[open] .details-toggle::before {
+        content: "-";
+    }
+    .secondary-grid {
+        margin-top: 16px;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px 26px;
+    }
+    .secondary-item p {
+        margin: 0;
+    }
+    .secondary-item .metric-label {
+        margin-bottom: 4px;
+    }
+    .secondary-item .metric-value-sm {
+        font-size: 17px;
+    }
+    .table-wrap {
+        margin-top: 20px;
+        overflow-x: auto;
+    }
+    table {
+        border: none;
+        margin-top: 0;
+    }
+    th, td {
+        border-bottom: 1px solid #eaecf0;
+    }
+    th {
+        background: #f9fafb;
+        color: #667085;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+    @media (max-width: 900px) {
+        .critical-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+        .total-line {
+            text-align: left;
+        }
+        .total-value {
+            font-size: 48px;
+        }
+        .secondary-grid {
+            grid-template-columns: 1fr;
+        }
+        .route-value {
+            font-size: 24px;
+        }
+    }
+</style>
 
-<div class="grid section">
-    <div class="stat"><strong>Transporte</strong><span>{{ quote.get_transport_type_display }}</span></div>
-    <div class="stat"><strong>Origen</strong><span>{% if quote.origin_location %}{{ quote.origin_location.code }} - {{ quote.origin_location.name }}{% else %}-{% endif %}</span></div>
-    <div class="stat"><strong>Piezas</strong><span>{{ quote.pieces_count }}</span></div>
-    <div class="stat"><strong>Peso real total (kg)</strong><span>{{ quote.actual_weight_total_kg }}</span></div>
-    <div class="stat"><strong>Peso volumetrico total (kg)</strong><span>{{ quote.volumetric_weight_total_kg }}</span></div>
-    <div class="stat"><strong>Volumen total (m3)</strong><span>{{ quote.volume_total_m3 }}</span></div>
-    <div class="stat"><strong>Base de cobro</strong><span>{{ quote.get_chargeable_basis_display }}</span></div>
-    <div class="stat"><strong>Valor cobrable</strong><span>{{ quote.chargeable_value }}</span></div>
-    <div class="stat"><strong>Tarifa USD</strong><span>{{ quote.rate_usd }}</span></div>
-    <div class="stat"><strong>Total USD</strong><span>{{ quote.total_usd }}</span></div>
-</div>
+<div class="result-shell">
+    <div>
+        <p class="result-kicker">Resultado de cotizacion #{{ quote.id }}</p>
+        <div class="route-line">
+            <p class="route-value">{{ quote.origin_country|default:"-" }} a {{ quote.destination_country|default:"-" }}</p>
+            {% if quote.transport_type == "AIR" %}
+            <svg class="route-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M2 13.5L10 12L21 5.5L19.5 4L10.5 8L7 5H5L6 9L2.5 11L2 13.5Z"></path>
+                <path d="M10.5 12.5L14.5 18H12.5L9.5 14.5L10.5 12.5Z"></path>
+            </svg>
+            {% else %}
+            <svg class="route-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 14H21L18 9H6L3 14Z"></path>
+                <path d="M7 9V6H12V9"></path>
+                <path d="M3 17C4.4 18.3 5.8 18.3 7.2 17C8.6 15.7 10 15.7 11.4 17C12.8 18.3 14.2 18.3 15.6 17C17 15.7 18.4 15.7 19.8 17C20.5 17.6 21.2 17.9 22 18"></path>
+            </svg>
+            {% endif %}
+        </div>
+    </div>
 
-<div class="section">
-    <h2>Detalle de piezas</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Peso (kg)</th>
-                <th>Largo (cm)</th>
-                <th>Ancho (cm)</th>
-                <th>Alto (cm)</th>
-                <th>Volumen (cm3)</th>
-                <th>Peso volumetrico (kg)</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in quote.items.all %}
-            <tr>
-                <td>{{ forloop.counter }}</td>
-                <td>{{ item.weight_kg }}</td>
-                <td>{{ item.length_cm }}</td>
-                <td>{{ item.width_cm }}</td>
-                <td>{{ item.height_cm }}</td>
-                <td>{{ item.volume_cm3 }}</td>
-                <td>{{ item.volumetric_weight_kg }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="critical-grid">
+        <div>
+            <p class="metric-label">Peso Real Total (kg)</p>
+            <p class="metric-value-sm">{{ quote.actual_weight_total_kg|es_number }}</p>
+        </div>
+        <div>
+            <p class="metric-label">Tarifa USD</p>
+            <p class="metric-value-sm">{{ quote.rate_usd|es_number }}</p>
+        </div>
+        <div class="total-line">
+            <p class="metric-label">Total USD</p>
+            <p class="total-value">{{ quote.total_usd|es_number }}</p>
+        </div>
+    </div>
+
+    <details class="details-wrap">
+        <summary class="details-toggle">Ver desglose de calculo y piezas</summary>
+
+        <div class="secondary-grid">
+            <div class="secondary-item">
+                <p class="metric-label">Base de cobro</p>
+                <p class="metric-value-sm">{{ quote.get_chargeable_basis_display }}</p>
+            </div>
+            <div class="secondary-item">
+                <p class="metric-label">Valor cobrable</p>
+                <p class="metric-value-sm">{{ quote.chargeable_value|es_number }}</p>
+            </div>
+            <div class="secondary-item">
+                <p class="metric-label">Volumen Total (m3)</p>
+                <p class="metric-value-sm">{{ quote.volume_total_m3|es_number }}</p>
+            </div>
+            <div class="secondary-item">
+                <p class="metric-label">Peso Volumetrico Total (kg)</p>
+                <p class="metric-value-sm">{{ quote.volumetric_weight_total_kg|es_number }}</p>
+            </div>
+            <div class="secondary-item">
+                <p class="metric-label">Punto interno origen (Hub)</p>
+                <p class="metric-value-sm">{% if quote.origin_location %}{{ quote.origin_location.code }} - {{ quote.origin_location.name }}{% else %}-{% endif %}</p>
+            </div>
+            <div class="secondary-item">
+                <p class="metric-label">Punto interno destino (Hub)</p>
+                <p class="metric-value-sm">{% if quote.destination_location %}{{ quote.destination_location.code }} - {{ quote.destination_location.name }}{% else %}-{% endif %}</p>
+            </div>
+            <div class="secondary-item">
+                <p class="metric-label">Piezas</p>
+                <p class="metric-value-sm">{{ quote.pieces_count }}</p>
+            </div>
+            <div class="secondary-item">
+                <p class="metric-label">Regla aplicada</p>
+                <p class="metric-value-sm">{{ basis_message }}</p>
+            </div>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Peso (kg)</th>
+                        <th>Largo (cm)</th>
+                        <th>Ancho (cm)</th>
+                        <th>Alto (cm)</th>
+                        <th>Volumen (cm3)</th>
+                        <th>Peso volumetrico (kg)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in quote.items.all %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ item.weight_kg|es_number }}</td>
+                        <td>{{ item.length_cm|es_number }}</td>
+                        <td>{{ item.width_cm|es_number }}</td>
+                        <td>{{ item.height_cm|es_number }}</td>
+                        <td>{{ item.volume_cm3|es_number }}</td>
+                        <td>{{ item.volumetric_weight_kg|es_number }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </details>
 </div>
 {% endblock %}

@@ -77,3 +77,10 @@ LOGOUT_REDIRECT_URL = "login"
 AIR_RATE_USD_PER_KG = 4.50
 SEA_RATE_USD_PER_M3 = 120.00
 AIR_VOLUMETRIC_FACTOR = 6000
+
+# Mapeo opcional pais -> codigo de entrada principal por tipo de transporte.
+# Si un pais no esta configurado, se toma automaticamente el primer origen activo disponible.
+COUNTRY_ENTRY_POINT_CODES = {
+    "AIR": {},
+    "SEA": {},
+}

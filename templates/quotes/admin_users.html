@@ -1,47 +1,441 @@
 {% extends 'base.html' %}
 {% block title %}Gestion de usuarios{% endblock %}
 {% block content %}
+<style>
+    .page-title h1 {
+        color: #3730a3;
+    }
+    .user-shell {
+        display: grid;
+        gap: 16px;
+    }
+    .section-card {
+        border-radius: 16px;
+        background: linear-gradient(180deg, #f8f8ff 0%, #ffffff 70%);
+        box-shadow: 0 14px 28px rgba(55, 48, 163, 0.08);
+        padding: 16px;
+    }
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px 12px;
+    }
+    .field label {
+        display: block;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: #6b7280;
+        margin-bottom: 4px;
+        font-weight: 600;
+    }
+    .field input {
+        width: 100%;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        background: #fff;
+        padding: 9px 10px;
+        font-size: 13px;
+    }
+    .field input:focus {
+        outline: 2px solid rgba(55, 48, 163, 0.16);
+        border-color: #4338ca;
+    }
+    .field.full {
+        grid-column: span 2;
+    }
+    .role-row {
+        grid-column: span 2;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        border: 1px solid #dbeafe;
+        border-radius: 10px;
+        background: #f8faff;
+        padding: 9px 11px;
+    }
+    .role-row label {
+        margin: 0;
+        font-size: 13px;
+        color: #312e81;
+        text-transform: none;
+        letter-spacing: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+    }
+    .role-row input {
+        width: 16px;
+        height: 16px;
+        accent-color: #3730a3;
+    }
+    .role-row small {
+        color: #64748b;
+        font-size: 11px;
+    }
+    .security-panel {
+        grid-column: span 2;
+        border: 1px dashed #c7d2fe;
+        border-radius: 10px;
+        padding: 10px 11px;
+        background: #f9f9ff;
+    }
+    .security-toggle {
+        cursor: pointer;
+        font-size: 12px;
+        color: #4f46e5;
+        font-weight: 600;
+        list-style: none;
+    }
+    .security-toggle::-webkit-details-marker {
+        display: none;
+    }
+    .security-list {
+        margin: 8px 0 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 5px;
+    }
+    .security-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        font-size: 12px;
+        color: #64748b;
+    }
+    .check-icon {
+        width: 14px;
+        height: 14px;
+        border-radius: 999px;
+        border: 1px solid #cbd5e1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        color: transparent;
+        transition: all 0.2s ease;
+    }
+    .security-item.is-ok .check-icon {
+        border-color: #16a34a;
+        background: #dcfce7;
+        color: #15803d;
+    }
+    .table-toolbar {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .search-box input {
+        width: 100%;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 14px;
+        background: #fff;
+    }
+    .search-box input:focus {
+        outline: 2px solid rgba(55, 48, 163, 0.16);
+        border-color: #4338ca;
+    }
+    .quick-filters {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .filter-btn {
+        border: 1px solid #cbd5e1;
+        border-radius: 999px;
+        background: #fff;
+        color: #475467;
+        padding: 6px 10px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+    .filter-btn.is-active {
+        border-color: #4338ca;
+        background: #eef2ff;
+        color: #312e81;
+    }
+    .users-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .users-table th {
+        background: #eef2ff;
+        color: #475467;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        padding: 10px 12px;
+        text-align: left;
+        border-bottom: 1px solid #dbeafe;
+    }
+    .users-table td {
+        border-bottom: 1px solid #eef2ff;
+        padding: 10px 12px;
+    }
+    .users-table tbody tr:hover {
+        background: #f8faff;
+    }
+    .user-name {
+        font-weight: 600;
+        color: #111827;
+    }
+    .user-email {
+        color: #64748b;
+    }
+    .role-badge {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 3px 8px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+    }
+    .role-admin {
+        background: #ede9fe;
+        color: #5b21b6;
+    }
+    .role-user {
+        background: #e0e7ff;
+        color: #3730a3;
+    }
+    .result-meta {
+        margin-top: 8px;
+        color: #64748b;
+        font-size: 12px;
+    }
+    .btn {
+        background: #3730a3;
+    }
+    .btn:hover {
+        background: #312e81;
+    }
+    .btn.btn-secondary {
+        background: #c4c9d1;
+        color: #111827;
+        border: 1px solid #9ca3af;
+    }
+    .btn.btn-secondary:hover {
+        background: #b5bcc6;
+    }
+    .btn.btn-compact {
+        padding: 10px 12px;
+        min-width: 96px;
+        font-size: 13px;
+        border-radius: 10px;
+    }
+    @media (max-width: 900px) {
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+        .field.full,
+        .role-row,
+        .security-panel {
+            grid-column: span 1;
+        }
+        .table-toolbar {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
 <div class="page-title">
     <h1>Gestion de usuarios</h1>
     <p class="subtle">Crea usuarios nuevos y define permisos administrativos.</p>
 </div>
 
-<div class="section">
-    <form method="post">
-        {% csrf_token %}
-        {{ user_form.as_p }}
-        <div class="actions">
-            <button class="btn" type="submit">Crear usuario</button>
-            <a class="btn btn-secondary" href="{% url 'quotes:admin_panel' %}">Volver al panel</a>
+<div class="user-shell">
+    <div class="section section-card">
+        <form method="post" id="user-create-form">
+            {% csrf_token %}
+            {{ user_form.non_field_errors }}
+
+            <div class="form-grid">
+                <div class="field">
+                    <label for="{{ user_form.username.id_for_label }}">Usuario</label>
+                    {{ user_form.username }}
+                    {{ user_form.username.errors }}
+                </div>
+                <div class="field">
+                    <label for="{{ user_form.email.id_for_label }}">Email</label>
+                    {{ user_form.email }}
+                    {{ user_form.email.errors }}
+                </div>
+                <div class="field">
+                    <label for="{{ user_form.first_name.id_for_label }}">Nombre</label>
+                    {{ user_form.first_name }}
+                    {{ user_form.first_name.errors }}
+                </div>
+                <div class="field">
+                    <label for="{{ user_form.last_name.id_for_label }}">Apellido</label>
+                    {{ user_form.last_name }}
+                    {{ user_form.last_name.errors }}
+                </div>
+                <div class="field">
+                    <label for="{{ user_form.password1.id_for_label }}">Contrasena</label>
+                    {{ user_form.password1 }}
+                    {{ user_form.password1.errors }}
+                </div>
+                <div class="field">
+                    <label for="{{ user_form.password2.id_for_label }}">Confirmar contrasena</label>
+                    {{ user_form.password2 }}
+                    {{ user_form.password2.errors }}
+                </div>
+
+                <div class="role-row">
+                    <label for="{{ user_form.is_staff.id_for_label }}">
+                        {{ user_form.is_staff }}
+                        Crear como administrador
+                    </label>
+                    <small>Permite acceso a panel de control.</small>
+                </div>
+
+                <details class="security-panel" open>
+                    <summary class="security-toggle">Seguridad de cuenta</summary>
+                    <ul class="security-list">
+                        <li class="security-item" data-rule="len">
+                            <span class="check-icon">✓</span>
+                            Minimo 8 caracteres
+                        </li>
+                        <li class="security-item" data-rule="upper">
+                            <span class="check-icon">✓</span>
+                            Incluye una letra mayuscula
+                        </li>
+                        <li class="security-item" data-rule="lower">
+                            <span class="check-icon">✓</span>
+                            Incluye una letra minuscula
+                        </li>
+                        <li class="security-item" data-rule="digit">
+                            <span class="check-icon">✓</span>
+                            Incluye un numero
+                        </li>
+                        <li class="security-item" data-rule="match">
+                            <span class="check-icon">✓</span>
+                            Contrasenas coinciden
+                        </li>
+                    </ul>
+                </details>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-compact" type="submit">Crear usuario</button>
+                <a class="btn btn-secondary btn-compact" href="{% url 'quotes:admin_panel' %}">Volver</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="section section-card">
+        <div class="table-toolbar">
+            <div class="search-box">
+                <input id="users-search" type="search" placeholder="Buscar por usuario o email..." autocomplete="off">
+            </div>
+            <div class="quick-filters">
+                <button type="button" class="filter-btn is-active" data-role="all">Todos</button>
+                <button type="button" class="filter-btn" data-role="admin">Admins</button>
+                <button type="button" class="filter-btn" data-role="user">Usuarios</button>
+            </div>
         </div>
-    </form>
+
+        <table class="users-table">
+            <thead>
+                <tr>
+                    <th>Usuario</th>
+                    <th>Email</th>
+                    <th>Rol</th>
+                    <th>Fecha alta</th>
+                </tr>
+            </thead>
+            <tbody id="users-table-body">
+                {% for user_item in recent_users %}
+                <tr data-role="{% if user_item.is_staff %}admin{% else %}user{% endif %}" data-search="{{ user_item.username|lower }} {{ user_item.email|default:''|lower }}">
+                    <td><span class="user-name">{{ user_item.username }}</span></td>
+                    <td><span class="user-email">{{ user_item.email|default:"-" }}</span></td>
+                    <td>
+                        {% if user_item.is_staff %}
+                        <span class="role-badge role-admin">Admin</span>
+                        {% else %}
+                        <span class="role-badge role-user">Usuario</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ user_item.date_joined|date:"d/m/Y H:i" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4">No hay usuarios activos.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div id="users-meta" class="result-meta"></div>
+    </div>
 </div>
 
-<div class="section">
-    <h2>Usuarios recientes</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>Usuario</th>
-                <th>Email</th>
-                <th>Rol</th>
-                <th>Fecha alta</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for user_item in recent_users %}
-            <tr>
-                <td>{{ user_item.username }}</td>
-                <td>{{ user_item.email|default:"-" }}</td>
-                <td>{% if user_item.is_staff %}Admin{% else %}Usuario{% endif %}</td>
-                <td>{{ user_item.date_joined }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="4">No hay usuarios activos.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+<script>
+(function () {
+    const password1 = document.getElementById('{{ user_form.password1.id_for_label }}');
+    const password2 = document.getElementById('{{ user_form.password2.id_for_label }}');
+    const securityItems = Array.from(document.querySelectorAll('.security-item'));
+    const rules = {
+        len: (v1) => (v1 || '').length >= 8,
+        upper: (v1) => /[A-Z]/.test(v1 || ''),
+        lower: (v1) => /[a-z]/.test(v1 || ''),
+        digit: (v1) => /[0-9]/.test(v1 || ''),
+        match: (v1, v2) => !!v1 && !!v2 && v1 === v2,
+    };
+
+    function updateSecurityState() {
+        const v1 = password1 ? password1.value : '';
+        const v2 = password2 ? password2.value : '';
+        securityItems.forEach((item) => {
+            const rule = item.dataset.rule;
+            const ok = rules[rule] ? rules[rule](v1, v2) : false;
+            item.classList.toggle('is-ok', ok);
+        });
+    }
+
+    if (password1 && password2) {
+        password1.addEventListener('input', updateSecurityState);
+        password2.addEventListener('input', updateSecurityState);
+        updateSecurityState();
+    }
+
+    const searchInput = document.getElementById('users-search');
+    const rows = Array.from(document.querySelectorAll('#users-table-body tr[data-role]'));
+    const meta = document.getElementById('users-meta');
+    const filterButtons = Array.from(document.querySelectorAll('.filter-btn'));
+    let activeRole = 'all';
+
+    function applyUserFilters() {
+        const term = (searchInput.value || '').trim().toLowerCase();
+        let visible = 0;
+        rows.forEach((row) => {
+            const role = row.dataset.role;
+            const haystack = row.dataset.search || '';
+            const roleMatch = activeRole === 'all' || role === activeRole;
+            const textMatch = !term || haystack.includes(term);
+            const show = roleMatch && textMatch;
+            row.style.display = show ? '' : 'none';
+            if (show) visible += 1;
+        });
+        meta.textContent = `Mostrando ${visible} usuarios`;
+    }
+
+    searchInput.addEventListener('input', applyUserFilters);
+    filterButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+            activeRole = btn.dataset.role;
+            filterButtons.forEach((b) => b.classList.toggle('is-active', b === btn));
+            applyUserFilters();
+        });
+    });
+    applyUserFilters();
+})();
+</script>
 {% endblock %}

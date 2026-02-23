@@ -69,17 +69,24 @@ python manage.py runserver
 - Admin (`is_staff=True`):
   - Puede acceder al panel de control.
   - Puede crear usuarios.
-  - Puede crear aeropuertos/puertos y definir una tarifa unica por origen.
+  - Puede asignar tarifas por pais para aereo y maritimo.
   - Puede ver el historial completo de todos los usuarios.
 
-## Tarifas por origen y vigencia
+## Tarifas por pais y vigencia
 
-- Cada cotizacion usa un origen (aeropuerto o puerto).
-- El sistema toma la tarifa vigente del origen a la fecha actual.
-- La vigencia inicia al crear la tarifa y termina automaticamente cuando se registra una nueva tarifa para el mismo origen.
+- El panel de tarifas incluye un catalogo de 249 paises (ISO 3166) listo para usar.
+- Cada cotizacion usa la tarifa vigente del pais de origen segun el tipo de transporte.
+- La vigencia inicia al crear la tarifa y termina automaticamente cuando se registra una nueva tarifa para el mismo pais y tipo de transporte.
 - Regla de cobro para aereo y maritimo:
   - Compara `peso_total_kg` vs `volumen_total_m3`.
   - Cobra la dimension mayor usando la misma tarifa unica.
+
+## Cotizacion por pais (interfaz comercial)
+
+- En la pantalla de cotizacion, el usuario selecciona solo `Pais de origen` y `Pais de destino`.
+- El sistema mapea internamente cada pais al aeropuerto/puerto principal segun el tipo de transporte.
+- El mapeo preferido se puede definir en `COUNTRY_ENTRY_POINT_CODES` dentro de `freight_quote/settings.py`.
+- Si un pais no tiene mapeo explicito, se genera automaticamente un punto interno tecnico.
 
 ## Configuracion base
 

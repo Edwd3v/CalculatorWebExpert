@@ -3,6 +3,7 @@ from datetime import date
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models import Q
 
 
 class OriginLocation(models.Model):
@@ -42,6 +43,13 @@ class LocationRate(models.Model):
 
     class Meta:
         ordering = ["-effective_from", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["location"],
+                condition=Q(is_active=True, effective_to__isnull=True),
+                name="uniq_open_active_rate_per_location",
+            )
+        ]
 
     def __str__(self) -> str:
         return f"{self.location.code} {self.effective_from}"
@@ -76,6 +84,15 @@ class Quote(models.Model):
         null=True,
         blank=True,
     )
+    destination_location = models.ForeignKey(
+        OriginLocation,
+        on_delete=models.PROTECT,
+        related_name="destination_quotes",
+        null=True,
+        blank=True,
+    )
+    origin_country = models.CharField(max_length=80, blank=True, default="")
+    destination_country = models.CharField(max_length=80, blank=True, default="")
     applied_rate = models.ForeignKey(
         LocationRate,
         on_delete=models.SET_NULL,
@@ -149,3 +166,24 @@ class QuoteItem(models.Model):
 
     def __str__(self) -> str:
         return f"Item #{self.pk} - Quote #{self.quote_id}"
+
+
+class AuditLog(models.Model):
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="audit_logs",
+    )
+    action = models.CharField(max_length=80)
+    model_name = models.CharField(max_length=80)
+    object_id = models.CharField(max_length=64, blank=True, default="")
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self) -> str:
+        return f"{self.action} {self.model_name} {self.object_id}".strip()
