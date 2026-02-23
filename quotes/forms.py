@@ -5,8 +5,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import UserCreationForm
 from django.forms import BaseFormSet, formset_factory
 
-from .models import LocationRate, OriginLocation, Quote
-from .services.location_mapping import get_available_countries, resolve_country_entry_point
+from .models import OriginLocation, Quote, RouteRate, RouteRateTier
+from .services.location_mapping import get_available_countries
 
 
 class QuoteForm(forms.Form):
@@ -28,24 +28,7 @@ class QuoteForm(forms.Form):
         self.fields["destination_country"].choices = country_choices
 
     def clean(self):
-        cleaned_data = super().clean()
-        transport_type = cleaned_data.get("transport_type")
-        origin_country = cleaned_data.get("origin_country")
-        destination_country = cleaned_data.get("destination_country")
-        if not transport_type or not origin_country or not destination_country:
-            return cleaned_data
-
-        if not resolve_country_entry_point(country=origin_country, transport_type=transport_type, create_missing=False):
-            self.add_error(
-                "origin_country",
-                "No existe un punto de salida configurado para el pais de origen y tipo de transporte seleccionado.",
-            )
-        if not resolve_country_entry_point(country=destination_country, transport_type=transport_type, create_missing=False):
-            self.add_error(
-                "destination_country",
-                "No existe un punto de llegada configurado para el pais de destino y tipo de transporte seleccionado.",
-            )
-        return cleaned_data
+        return super().clean()
 
 
 class QuoteItemInputForm(forms.Form):
@@ -113,9 +96,37 @@ class OriginLocationForm(forms.ModelForm):
 
 class LocationRateForm(forms.Form):
     transport_type = forms.ChoiceField(choices=Quote.TransportType.choices, label="Tipo de transporte")
-    country = forms.ChoiceField(choices=(), label="Pais")
+    origin_country = forms.ChoiceField(choices=(), label="Pais origen")
+    destination_country = forms.ChoiceField(choices=(), label="Pais destino")
     rate_usd = forms.DecimalField(label="Tarifa unica (USD)", min_value=Decimal("0.0001"), max_digits=12, decimal_places=4)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["country"].choices = [("", "Selecciona pais")] + get_available_countries()
+        choices = [("", "Selecciona pais")] + get_available_countries()
+        self.fields["origin_country"].choices = choices
+        self.fields["destination_country"].choices = choices
+
+
+class RouteRateTierForm(forms.Form):
+    route_rate = forms.ModelChoiceField(queryset=RouteRate.objects.none(), label="Ruta")
+    min_weight_kg = forms.DecimalField(label="Desde KG", min_value=Decimal("0"), max_digits=12, decimal_places=3)
+    max_weight_kg = forms.DecimalField(label="Hasta KG", required=False, min_value=Decimal("0"), max_digits=12, decimal_places=3)
+    rate_usd = forms.DecimalField(label="Tarifa USD", min_value=Decimal("0.0001"), max_digits=12, decimal_places=4)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["route_rate"].queryset = RouteRate.objects.filter(is_active=True).order_by(
+            "origin_country",
+            "destination_country",
+            "transport_type",
+        )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        min_weight = cleaned_data.get("min_weight_kg")
+        max_weight = cleaned_data.get("max_weight_kg")
+        if min_weight is None:
+            return cleaned_data
+        if max_weight is not None and max_weight < min_weight:
+            self.add_error("max_weight_kg", "Debe ser mayor o igual al minimo.")
+        return cleaned_data

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AuditLog, FreightRateConfig, LocationRate, OriginLocation, Quote, QuoteItem
+from .models import AuditLog, FreightRateConfig, LocationRate, OriginLocation, Quote, QuoteItem, RouteRate, RouteRateTier
 
 
 class QuoteItemInline(admin.TabularInline):
@@ -51,6 +51,20 @@ class LocationRateAdmin(admin.ModelAdmin):
     list_display = ("location", "usd_per_kg", "effective_from", "effective_to", "is_active", "updated_by")
     list_filter = ("location__location_type", "is_active", "effective_from")
     search_fields = ("location__code", "location__name")
+
+
+@admin.register(RouteRate)
+class RouteRateAdmin(admin.ModelAdmin):
+    list_display = ("origin_country", "destination_country", "transport_type", "rate_usd", "effective_from", "effective_to", "is_active")
+    list_filter = ("transport_type", "is_active", "effective_from")
+    search_fields = ("origin_country", "destination_country")
+
+
+@admin.register(RouteRateTier)
+class RouteRateTierAdmin(admin.ModelAdmin):
+    list_display = ("route_rate", "min_weight_kg", "max_weight_kg", "rate_usd", "is_active", "updated_at")
+    list_filter = ("is_active", "route_rate__transport_type")
+    search_fields = ("route_rate__origin_country", "route_rate__destination_country")
 
 
 @admin.register(AuditLog)

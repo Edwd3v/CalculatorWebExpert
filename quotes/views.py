@@ -15,17 +15,40 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from .constants.countries import WORLD_COUNTRY_NAMES
-from .forms import AdminUserCreationForm, LocationRateForm, QuoteForm, QuoteItemFormSet
-from .models import LocationRate, OriginLocation, Quote, QuoteItem
+from .forms import AdminUserCreationForm, LocationRateForm, QuoteForm, QuoteItemFormSet, RouteRateTierForm
+from .models import LocationRate, OriginLocation, Quote, QuoteItem, RouteRate, RouteRateTier
 from .services.audit import log_admin_action
 from .services.calculation import calculate_quote
 from .services.location_mapping import normalize_country_name, resolve_country_entry_point
+from .services.rate_tiers import resolve_route_rate_tier
 
 
 def get_effective_rate(*, location: OriginLocation, on_date: date | None = None) -> LocationRate | None:
     target_date = on_date or date.today()
     return (
         LocationRate.objects.filter(location=location, is_active=True, effective_from__lte=target_date)
+        .filter(Q(effective_to__isnull=True) | Q(effective_to__gte=target_date))
+        .order_by("-effective_from", "-id")
+        .first()
+    )
+
+
+def get_effective_route_rate(
+    *,
+    origin_country: str,
+    destination_country: str,
+    transport_type: str,
+    on_date: date | None = None,
+) -> RouteRate | None:
+    target_date = on_date or date.today()
+    return (
+        RouteRate.objects.filter(
+            origin_country=origin_country,
+            destination_country=destination_country,
+            transport_type=transport_type,
+            is_active=True,
+            effective_from__lte=target_date,
+        )
         .filter(Q(effective_to__isnull=True) | Q(effective_to__gte=target_date))
         .order_by("-effective_from", "-id")
         .first()
@@ -69,15 +92,39 @@ def new_quote(request):
                 form.add_error("destination_country", "No hay un punto de llegada configurado para el pais seleccionado.")
                 return render(request, "quotes/new_quote.html", {"form": form, "formset": formset})
 
-            applied_rate = get_effective_rate(location=origin_location)
-            if not applied_rate:
-                form.add_error("origin_country", "No existe una tarifa vigente para el pais de origen seleccionado.")
+            applied_route_rate = get_effective_route_rate(
+                origin_country=origin_country,
+                destination_country=destination_country,
+                transport_type=transport_type,
+            )
+            if not applied_route_rate:
+                form.add_error(
+                    "destination_country",
+                    "No existe una tarifa vigente para la ruta origen-destino seleccionada.",
+                )
+                return render(request, "quotes/new_quote.html", {"form": form, "formset": formset})
+
+            pre_result = calculate_quote(
+                transport_type=transport_type,
+                items_data=items_data,
+                rate_usd=Decimal("0"),
+                volumetric_factor=Decimal(str(settings.AIR_VOLUMETRIC_FACTOR)),
+            )
+            applied_tier = resolve_route_rate_tier(
+                route_rate=applied_route_rate,
+                weight_kg=pre_result["actual_weight_total_kg"],
+            )
+            if not applied_tier:
+                form.add_error(
+                    "destination_country",
+                    "No existe un tramo tarifario vigente para el peso total de la mercancia en esta ruta.",
+                )
                 return render(request, "quotes/new_quote.html", {"form": form, "formset": formset})
 
             result = calculate_quote(
                 transport_type=transport_type,
                 items_data=items_data,
-                rate_usd=applied_rate.rate_usd,
+                rate_usd=applied_tier.rate_usd,
                 volumetric_factor=Decimal(str(settings.AIR_VOLUMETRIC_FACTOR)),
             )
 
@@ -88,7 +135,9 @@ def new_quote(request):
                     destination_location=destination_location,
                     origin_country=origin_country,
                     destination_country=destination_country,
-                    applied_rate=applied_rate,
+                    applied_rate=None,
+                    applied_route_rate=applied_route_rate,
+                    applied_route_rate_tier=applied_tier,
                     transport_type=transport_type,
                     pieces_count=expected_pieces,
                     actual_weight_total_kg=result["actual_weight_total_kg"],
@@ -122,7 +171,7 @@ def new_quote(request):
 
 @login_required
 def quote_result(request, quote_id: int):
-    quote_query = Quote.objects.select_related("origin_location", "destination_location", "applied_rate").prefetch_related("items")
+    quote_query = Quote.objects.select_related("origin_location", "destination_location", "applied_rate", "applied_route_rate").prefetch_related("items")
     if request.user.is_staff:
         quote = get_object_or_404(quote_query, id=quote_id)
     else:
@@ -159,14 +208,14 @@ def admin_panel(request):
         "total_quotes": Quote.objects.count(),
         "total_countries": len(WORLD_COUNTRY_NAMES),
         "countries_with_air_rate": (
-            LocationRate.objects.filter(is_active=True, location__location_type=OriginLocation.LocationType.AIRPORT)
-            .values("location__country")
+            RouteRate.objects.filter(is_active=True, transport_type=Quote.TransportType.AIR)
+            .values("origin_country")
             .distinct()
             .count()
         ),
         "countries_with_sea_rate": (
-            LocationRate.objects.filter(is_active=True, location__location_type=OriginLocation.LocationType.SEAPORT)
-            .values("location__country")
+            RouteRate.objects.filter(is_active=True, transport_type=Quote.TransportType.SEA)
+            .values("origin_country")
             .distinct()
             .count()
         ),
@@ -183,29 +232,33 @@ def admin_rates(request):
     if request.method == "POST":
         if "create_rate" in request.POST:
             rate_form = LocationRateForm(request.POST, prefix="rate")
+            tier_form = RouteRateTierForm(prefix="tier")
             if rate_form.is_valid():
-                country = rate_form.cleaned_data["country"]
+                origin_country = normalize_country_name(rate_form.cleaned_data["origin_country"])
+                destination_country = normalize_country_name(rate_form.cleaned_data["destination_country"])
                 transport_type = rate_form.cleaned_data["transport_type"]
                 rate_value = rate_form.cleaned_data["rate_usd"]
-                location = resolve_country_entry_point(country=country, transport_type=transport_type, create_missing=True)
-                if not location:
-                    messages.error(request, "No se pudo resolver el punto interno para el pais seleccionado.")
+                if origin_country == destination_country:
+                    messages.error(request, "Origen y destino no pueden ser iguales para configurar una ruta.")
                     return redirect("quotes:admin_rates")
                 today = date.today()
                 try:
                     with transaction.atomic():
-                        # Lock de las tarifas activas abiertas del origen para evitar colisiones concurrentes.
-                        open_rates = LocationRate.objects.select_for_update().filter(
-                            location=location,
+                        # Lock de tarifas abiertas de la misma ruta para evitar colisiones concurrentes.
+                        open_rates = RouteRate.objects.select_for_update().filter(
+                            origin_country=origin_country,
+                            destination_country=destination_country,
+                            transport_type=transport_type,
                             is_active=True,
                             effective_to__isnull=True,
                         )
                         open_rates.update(effective_to=today, is_active=False)
 
-                        new_rate = LocationRate(
-                            location=location,
-                            usd_per_kg=rate_value,
-                            usd_per_m3=rate_value,
+                        new_rate = RouteRate(
+                            origin_country=origin_country,
+                            destination_country=destination_country,
+                            transport_type=transport_type,
+                            rate_usd=rate_value,
                             effective_from=today,
                             is_active=True,
                         )
@@ -215,12 +268,12 @@ def admin_rates(request):
                         log_admin_action(
                             actor=request.user,
                             action="CREATE_RATE",
-                            model_name="LocationRate",
+                            model_name="RouteRate",
                             object_id=new_rate.id,
                             metadata={
-                                "country": normalize_country_name(country),
+                                "origin_country": origin_country,
+                                "destination_country": destination_country,
                                 "transport_type": transport_type,
-                                "location_id": location.id,
                                 "rate_usd": rate_value,
                             },
                         )
@@ -232,41 +285,95 @@ def admin_rates(request):
                     return redirect("quotes:admin_rates")
                 messages.success(request, "Tarifa creada correctamente.")
                 return redirect("quotes:admin_rates")
+        elif "create_tier" in request.POST:
+            tier_form = RouteRateTierForm(request.POST, prefix="tier")
+            rate_form = LocationRateForm(prefix="rate")
+            if tier_form.is_valid():
+                route_rate = tier_form.cleaned_data["route_rate"]
+                min_weight = tier_form.cleaned_data["min_weight_kg"]
+                max_weight = tier_form.cleaned_data["max_weight_kg"]
+                rate_value = tier_form.cleaned_data["rate_usd"]
+                try:
+                    with transaction.atomic():
+                        new_tier = RouteRateTier.objects.create(
+                            route_rate=route_rate,
+                            min_weight_kg=min_weight,
+                            max_weight_kg=max_weight,
+                            rate_usd=rate_value,
+                            is_active=True,
+                        )
+                        log_admin_action(
+                            actor=request.user,
+                            action="CREATE_ROUTE_RATE_TIER",
+                            model_name="RouteRateTier",
+                            object_id=new_tier.id,
+                            metadata={
+                                "route_rate_id": route_rate.id,
+                                "min_weight_kg": min_weight,
+                                "max_weight_kg": max_weight,
+                                "rate_usd": rate_value,
+                            },
+                        )
+                except Exception as exc:
+                    tier_form.add_error(None, str(exc))
+                else:
+                    messages.success(request, "Tramo tarifario creado correctamente.")
+                    return redirect("quotes:admin_rates")
+        elif "deactivate_tier" in request.POST:
+            tier_form = RouteRateTierForm(prefix="tier")
+            rate_form = LocationRateForm(prefix="rate")
+            tier_id = request.POST.get("tier_id", "").strip()
+            tier = RouteRateTier.objects.filter(id=tier_id, is_active=True).first()
+            if tier:
+                tier.is_active = False
+                tier.save(update_fields=["is_active", "updated_at"])
+                log_admin_action(
+                    actor=request.user,
+                    action="DEACTIVATE_ROUTE_RATE_TIER",
+                    model_name="RouteRateTier",
+                    object_id=tier.id,
+                    metadata={"route_rate_id": tier.route_rate_id},
+                )
+                messages.success(request, "Tramo desactivado.")
+                return redirect("quotes:admin_rates")
         else:
             rate_form = LocationRateForm(prefix="rate")
+            tier_form = RouteRateTierForm(prefix="tier")
     else:
         rate_form = LocationRateForm(prefix="rate")
+        tier_form = RouteRateTierForm(prefix="tier")
 
     today = date.today()
-    effective_rate_rows = (
-        LocationRate.objects.filter(is_active=True, effective_from__lte=today)
+    effective_route_rows = (
+        RouteRate.objects.filter(is_active=True, effective_from__lte=today)
         .filter(Q(effective_to__isnull=True) | Q(effective_to__gte=today))
-        .select_related("location")
-        .order_by("location__country", "location__location_type", "-effective_from", "-id")
+        .order_by("origin_country", "destination_country", "transport_type", "-effective_from", "-id")
     )
-    rate_by_country_and_type: dict[tuple[str, str], LocationRate] = {}
-    for rate in effective_rate_rows:
-        canonical_country = normalize_country_name(rate.location.country)
-        key = (canonical_country, rate.location.location_type)
-        if key not in rate_by_country_and_type:
-            rate_by_country_and_type[key] = rate
-
-    country_rows = []
-    for country in WORLD_COUNTRY_NAMES:
-        country_rows.append(
+    route_rows = []
+    for route_rate in effective_route_rows:
+        route_rows.append(
             {
-                "country": country,
-                "air_rate": rate_by_country_and_type.get((country, OriginLocation.LocationType.AIRPORT)),
-                "sea_rate": rate_by_country_and_type.get((country, OriginLocation.LocationType.SEAPORT)),
+                "origin_country": route_rate.origin_country,
+                "destination_country": route_rate.destination_country,
+                "transport_type": route_rate.transport_type,
+                "rate": route_rate,
             }
         )
+    active_tiers = RouteRateTier.objects.select_related("route_rate").filter(is_active=True).order_by(
+        "route_rate__origin_country",
+        "route_rate__destination_country",
+        "route_rate__transport_type",
+        "min_weight_kg",
+    )
 
     return render(
         request,
         "quotes/admin_rates.html",
         {
             "rate_form": rate_form,
-            "country_rows": country_rows,
+            "tier_form": tier_form,
+            "route_rows": route_rows,
+            "active_tiers": active_tiers,
         },
     )
 

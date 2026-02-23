@@ -220,6 +220,17 @@
                 <p class="metric-value-sm">{{ quote.pieces_count }}</p>
             </div>
             <div class="secondary-item">
+                <p class="metric-label">Tramo tarifario aplicado (KG)</p>
+                <p class="metric-value-sm">
+                    {% if quote.applied_route_rate_tier %}
+                        {{ quote.applied_route_rate_tier.min_weight_kg|es_number }} a
+                        {% if quote.applied_route_rate_tier.max_weight_kg %}{{ quote.applied_route_rate_tier.max_weight_kg|es_number }}{% else %}en adelante{% endif %}
+                    {% else %}
+                        -
+                    {% endif %}
+                </p>
+            </div>
+            <div class="secondary-item">
                 <p class="metric-label">Regla aplicada</p>
                 <p class="metric-value-sm">{{ basis_message }}</p>
             </div>

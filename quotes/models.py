@@ -1,6 +1,8 @@
 from datetime import date
+from decimal import Decimal
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models import Q
@@ -67,6 +69,92 @@ class LocationRate(models.Model):
         super().save(*args, **kwargs)
 
 
+class RouteRate(models.Model):
+    class TransportType(models.TextChoices):
+        AIR = "AIR", "Aereo"
+        SEA = "SEA", "Maritimo"
+
+    origin_country = models.CharField(max_length=80)
+    destination_country = models.CharField(max_length=80)
+    transport_type = models.CharField(max_length=10, choices=TransportType.choices)
+    rate_usd = models.DecimalField(max_digits=12, decimal_places=4)
+    effective_from = models.DateField()
+    effective_to = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="updated_route_rates",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["origin_country", "destination_country", "transport_type", "-effective_from", "-id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["origin_country", "destination_country", "transport_type"],
+                condition=Q(is_active=True, effective_to__isnull=True),
+                name="uniq_open_active_route_rate",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.origin_country}->{self.destination_country} {self.transport_type} {self.effective_from}"
+
+    def save(self, *args, **kwargs):
+        if not self.effective_from:
+            self.effective_from = date.today()
+        super().save(*args, **kwargs)
+
+
+class RouteRateTier(models.Model):
+    route_rate = models.ForeignKey(RouteRate, on_delete=models.CASCADE, related_name="tiers")
+    min_weight_kg = models.DecimalField(max_digits=12, decimal_places=3)
+    max_weight_kg = models.DecimalField(max_digits=12, decimal_places=3, null=True, blank=True)
+    rate_usd = models.DecimalField(max_digits=12, decimal_places=4)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["route_rate_id", "min_weight_kg", "id"]
+
+    def __str__(self) -> str:
+        top = self.max_weight_kg if self.max_weight_kg is not None else "INF"
+        return f"Tier {self.route_rate_id} [{self.min_weight_kg}, {top}]"
+
+    def clean(self):
+        if self.min_weight_kg is None:
+            raise ValidationError({"min_weight_kg": "El peso minimo es obligatorio."})
+        if self.min_weight_kg < Decimal("0"):
+            raise ValidationError({"min_weight_kg": "El peso minimo no puede ser negativo."})
+        if self.max_weight_kg is not None and self.max_weight_kg < self.min_weight_kg:
+            raise ValidationError({"max_weight_kg": "El peso maximo debe ser mayor o igual al minimo."})
+
+        if not self.route_rate_id:
+            return
+
+        others = RouteRateTier.objects.filter(route_rate_id=self.route_rate_id, is_active=True)
+        if self.pk:
+            others = others.exclude(pk=self.pk)
+
+        new_min = self.min_weight_kg
+        new_max = self.max_weight_kg
+
+        for tier in others:
+            old_min = tier.min_weight_kg
+            old_max = tier.max_weight_kg
+            overlap = (new_max is None or old_min <= new_max) and (old_max is None or new_min <= old_max)
+            if overlap:
+                raise ValidationError("El rango se superpone con otro tramo activo de la ruta.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
 class Quote(models.Model):
     class TransportType(models.TextChoices):
         AIR = "AIR", "Aereo"
@@ -95,6 +183,20 @@ class Quote(models.Model):
     destination_country = models.CharField(max_length=80, blank=True, default="")
     applied_rate = models.ForeignKey(
         LocationRate,
+        on_delete=models.SET_NULL,
+        related_name="quotes",
+        null=True,
+        blank=True,
+    )
+    applied_route_rate = models.ForeignKey(
+        RouteRate,
+        on_delete=models.SET_NULL,
+        related_name="quotes",
+        null=True,
+        blank=True,
+    )
+    applied_route_rate_tier = models.ForeignKey(
+        RouteRateTier,
         on_delete=models.SET_NULL,
         related_name="quotes",
         null=True,

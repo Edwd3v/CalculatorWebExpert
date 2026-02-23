@@ -1,11 +1,9 @@
 {% extends 'base.html' %}
 {% load quotes_extras %}
-{% block title %}Tarifas por pais{% endblock %}
+{% block title %}Tarifas por ruta{% endblock %}
 {% block content %}
 <style>
-    .page-title h1 {
-        color: #065f46;
-    }
+    .page-title h1 { color: #065f46; }
     .toolbar {
         margin-top: 10px;
         border: 1px solid #b7e4d1;
@@ -16,7 +14,7 @@
     }
     .toolbar form {
         display: grid;
-        grid-template-columns: 1.2fr 2fr 1.2fr auto auto;
+        grid-template-columns: 1fr 1fr 1fr 1fr auto auto;
         gap: 10px;
         align-items: end;
     }
@@ -29,8 +27,7 @@
         margin-bottom: 4px;
         font-weight: 600;
     }
-    .tool-field select,
-    .tool-field input {
+    .tool-field select, .tool-field input {
         width: 100%;
         border: 1px solid #cbd5e1;
         border-radius: 10px;
@@ -38,8 +35,7 @@
         padding: 9px 10px;
         font-size: 13px;
     }
-    .tool-field select:focus,
-    .tool-field input:focus {
+    .tool-field select:focus, .tool-field input:focus {
         outline: 2px solid rgba(6, 95, 70, 0.16);
         border-color: #047857;
     }
@@ -62,22 +58,6 @@
         outline: 2px solid rgba(6, 95, 70, 0.16);
         border-color: #047857;
     }
-    .toggle-active {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        margin-left: 18px;
-        font-size: 13px;
-        color: #334155;
-        font-weight: 600;
-        white-space: nowrap;
-        justify-self: end;
-    }
-    .toggle-active input {
-        width: 16px;
-        height: 16px;
-        accent-color: #065f46;
-    }
     .table-shell {
         margin-top: 10px;
         border-radius: 14px;
@@ -85,14 +65,8 @@
         box-shadow: 0 10px 22px rgba(6, 95, 70, 0.07);
         overflow: hidden;
     }
-    .table-scroll {
-        max-height: 62vh;
-        overflow: auto;
-    }
-    .rates-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
+    .table-scroll { max-height: 54vh; overflow: auto; }
+    .rates-table { width: 100%; border-collapse: collapse; }
     .rates-table thead th {
         position: sticky;
         top: 0;
@@ -111,91 +85,57 @@
         padding: 10px 12px;
         vertical-align: top;
     }
-    .rates-table tbody tr:hover {
-        background: #f7fcfa;
-    }
-    .country-name {
-        font-weight: 600;
-        color: #111827;
-    }
-    .rate-cell {
-        display: grid;
-        gap: 2px;
-    }
-    .rate-top {
+    .rates-table tbody tr:hover { background: #f7fcfa; }
+    .route-name { font-weight: 600; color: #111827; }
+    .transport-badge {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        color: #111827;
-        font-weight: 600;
-        line-height: 1.2;
-    }
-    .rate-icon {
-        width: 14px;
-        height: 14px;
-        display: block;
-        flex-shrink: 0;
-        stroke: #065f46;
-        fill: none;
-        stroke-width: 1.7;
-    }
-    .rate-empty {
-        color: #94a3b8;
-        font-size: 12px;
-        font-weight: 500;
-    }
-    .rate-meta {
-        color: #64748b;
-        font-size: 10px;
-        line-height: 1.2;
-    }
-    .badge {
-        display: inline-flex;
-        align-items: center;
         border-radius: 999px;
-        background: #ecfdf5;
-        color: #047857;
-        padding: 2px 7px;
-        font-size: 10px;
+        padding: 4px 9px;
+        font-size: 11px;
         font-weight: 700;
         letter-spacing: 0.02em;
-        width: fit-content;
     }
-    .btn {
-        background: #065f46;
+    .transport-badge svg { width: 12px; height: 12px; fill: none; stroke-width: 1.7; }
+    .transport-air { background: #e0f2fe; color: #075985; }
+    .transport-air svg { stroke: #0369a1; }
+    .transport-sea { background: #dcfce7; color: #166534; }
+    .transport-sea svg { stroke: #15803d; }
+    .rate-strong { font-weight: 700; color: #111827; }
+    .rate-meta { color: #64748b; font-size: 11px; }
+    .tier-toolbar {
+        margin-top: 16px;
+        border: 1px solid #d1fae5;
+        border-radius: 12px;
+        background: #f8fffc;
+        padding: 10px;
     }
-    .btn:hover {
-        background: #064e3b;
+    .tier-toolbar form {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr auto;
+        gap: 8px;
+        align-items: end;
     }
-    .btn.btn-secondary {
-        background: #c4c9d1;
-        color: #111827;
-        border: 1px solid #9ca3af;
-    }
-    .btn.btn-secondary:hover {
-        background: #b5bcc6;
-    }
-    .btn.btn-compact {
-        padding: 10px 12px;
-        min-width: 88px;
-        font-size: 13px;
-        border-radius: 10px;
-    }
-    .results-meta {
-        margin-top: 8px;
-        color: #64748b;
-        font-size: 12px;
-    }
-    @media (max-width: 1020px) {
-        .toolbar form {
-            grid-template-columns: 1fr 1fr;
-        }
+    .tier-actions form { margin: 0; }
+    .btn { background: #065f46; }
+    .btn:hover { background: #064e3b; }
+    .btn.btn-secondary { background: #c4c9d1; color: #111827; border: 1px solid #9ca3af; }
+    .btn.btn-secondary:hover { background: #b5bcc6; }
+    .btn.btn-danger { background: #b91c1c; }
+    .btn.btn-danger:hover { background: #991b1b; }
+    .btn.btn-compact { padding: 10px 12px; min-width: 88px; font-size: 13px; border-radius: 10px; }
+    .btn.btn-xs { padding: 5px 8px; font-size: 11px; border-radius: 8px; }
+    .results-meta { margin-top: 8px; color: #64748b; font-size: 12px; }
+    @media (max-width: 1120px) {
+        .toolbar form { grid-template-columns: 1fr 1fr; }
+        .tier-toolbar form { grid-template-columns: 1fr 1fr; }
     }
 </style>
 
 <div class="page-title">
-    <h1>Tarifas por pais</h1>
-    <p class="subtle">Asigna tarifas por pais y tipo de transporte. El sistema resuelve internamente el punto tecnico.</p>
+    <h1>Tarifas por ruta</h1>
+    <p class="subtle">Define tarifa base por ruta y despues los tramos de peso que aplican el precio real.</p>
 </div>
 
 <div class="toolbar">
@@ -206,14 +146,18 @@
             {{ rate_form.transport_type }}
         </div>
         <div class="tool-field">
-            <label for="{{ rate_form.country.id_for_label }}">Pais</label>
-            {{ rate_form.country }}
+            <label for="{{ rate_form.origin_country.id_for_label }}">Pais origen</label>
+            {{ rate_form.origin_country }}
         </div>
         <div class="tool-field">
-            <label for="{{ rate_form.rate_usd.id_for_label }}">Tarifa (USD)</label>
+            <label for="{{ rate_form.destination_country.id_for_label }}">Pais destino</label>
+            {{ rate_form.destination_country }}
+        </div>
+        <div class="tool-field">
+            <label for="{{ rate_form.rate_usd.id_for_label }}">Tarifa base (USD)</label>
             {{ rate_form.rate_usd }}
         </div>
-        <button class="btn btn-compact" type="submit" name="create_rate" value="1">Guardar</button>
+        <button class="btn btn-compact" type="submit" name="create_rate" value="1">Guardar ruta</button>
         <a class="btn btn-secondary btn-compact" href="{% url 'quotes:admin_panel' %}">Volver</a>
     </form>
     {% if rate_form.errors %}
@@ -224,12 +168,8 @@
 <div class="section">
     <div class="table-toolbar">
         <div class="search-box">
-            <input id="country-search" type="search" placeholder="Buscar pais..." autocomplete="off">
+            <input id="route-search" type="search" placeholder="Buscar ruta o transporte..." autocomplete="off">
         </div>
-        <label class="toggle-active">
-            <input id="only-active" type="checkbox" checked>
-            Solo activos
-        </label>
     </div>
 
     <div class="table-shell">
@@ -237,51 +177,34 @@
             <table class="rates-table">
                 <thead>
                     <tr>
-                        <th>Pais</th>
-                        <th>Tarifa Aerea</th>
-                        <th>Tarifa Maritima</th>
+                        <th>Ruta</th>
+                        <th>Transporte</th>
+                        <th>Tarifa Base USD</th>
+                        <th>Vigencia</th>
                     </tr>
                 </thead>
                 <tbody id="rates-table-body">
-                    {% for row in country_rows %}
-                    <tr data-country="{{ row.country|lower }}" data-has-rate="{% if row.air_rate or row.sea_rate %}1{% else %}0{% endif %}">
-                        <td><span class="country-name">{{ row.country }}</span></td>
+                    {% for row in route_rows %}
+                    <tr data-search="{{ row.origin_country|lower }} {{ row.destination_country|lower }} {{ row.transport_type|lower }}">
+                        <td><span class="route-name">{{ row.origin_country }} a {{ row.destination_country }}</span></td>
                         <td>
-                            {% if row.air_rate %}
-                            <div class="rate-cell">
-                                <div class="rate-top">
-                                    <svg class="rate-icon" viewBox="0 0 24 24" aria-hidden="true">
-                                        <path d="M2 13.5L10 12L21 5.5L19.5 4L10.5 8L7 5H5L6 9L2.5 11L2 13.5Z"></path>
-                                        <path d="M10.5 12.5L14.5 18H12.5L9.5 14.5L10.5 12.5Z"></path>
-                                    </svg>
-                                    <span>{{ row.air_rate.rate_usd|es_number }} USD</span>
-                                </div>
-                                <span class="badge">Vigente</span>
-                                <span class="rate-meta">Desde {{ row.air_rate.effective_from|date:"d/m/Y" }}</span>
-                            </div>
+                            {% if row.transport_type == "AIR" %}
+                            <span class="transport-badge transport-air">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 13.5L10 12L21 5.5L19.5 4L10.5 8L7 5H5L6 9L2.5 11L2 13.5Z"></path><path d="M10.5 12.5L14.5 18H12.5L9.5 14.5L10.5 12.5Z"></path></svg>
+                                Aereo
+                            </span>
                             {% else %}
-                            <span class="rate-empty">Sin tarifa</span>
+                            <span class="transport-badge transport-sea">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 14H21L18 9H6L3 14Z"></path><path d="M7 9V6H12V9"></path><path d="M3 17C4.4 18.3 5.8 18.3 7.2 17C8.6 15.7 10 15.7 11.4 17C12.8 18.3 14.2 18.3 15.6 17C17 15.7 18.4 15.7 19.8 17C20.5 17.6 21.2 17.9 22 18"></path></svg>
+                                Maritimo
+                            </span>
                             {% endif %}
                         </td>
-                        <td>
-                            {% if row.sea_rate %}
-                            <div class="rate-cell">
-                                <div class="rate-top">
-                                    <svg class="rate-icon" viewBox="0 0 24 24" aria-hidden="true">
-                                        <path d="M3 14H21L18 9H6L3 14Z"></path>
-                                        <path d="M7 9V6H12V9"></path>
-                                        <path d="M3 17C4.4 18.3 5.8 18.3 7.2 17C8.6 15.7 10 15.7 11.4 17C12.8 18.3 14.2 18.3 15.6 17C17 15.7 18.4 15.7 19.8 17C20.5 17.6 21.2 17.9 22 18"></path>
-                                    </svg>
-                                    <span>{{ row.sea_rate.rate_usd|es_number }} USD</span>
-                                </div>
-                                <span class="badge">Vigente</span>
-                                <span class="rate-meta">Desde {{ row.sea_rate.effective_from|date:"d/m/Y" }}</span>
-                            </div>
-                            {% else %}
-                            <span class="rate-empty">Sin tarifa</span>
-                            {% endif %}
-                        </td>
+                        <td><span class="rate-strong">{{ row.rate.rate_usd|es_number }}</span></td>
+                        <td><span class="rate-meta">Desde {{ row.rate.effective_from|date:"d/m/Y" }}</span></td>
                     </tr>
+                    {% empty %}
+                    <tr><td colspan="4">No hay tarifas de ruta activas.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -290,34 +213,88 @@
     <div id="results-meta" class="results-meta"></div>
 </div>
 
+<div class="tier-toolbar">
+    <form method="post">
+        {% csrf_token %}
+        <div class="tool-field">
+            <label for="{{ tier_form.route_rate.id_for_label }}">Ruta</label>
+            {{ tier_form.route_rate }}
+        </div>
+        <div class="tool-field">
+            <label for="{{ tier_form.min_weight_kg.id_for_label }}">Desde KG</label>
+            {{ tier_form.min_weight_kg }}
+        </div>
+        <div class="tool-field">
+            <label for="{{ tier_form.max_weight_kg.id_for_label }}">Hasta KG</label>
+            {{ tier_form.max_weight_kg }}
+        </div>
+        <div class="tool-field">
+            <label for="{{ tier_form.rate_usd.id_for_label }}">Tarifa USD</label>
+            {{ tier_form.rate_usd }}
+        </div>
+        <button class="btn btn-compact" type="submit" name="create_tier" value="1">Agregar tramo</button>
+    </form>
+    {% if tier_form.errors %}
+    <div class="results-meta">{{ tier_form.errors }}</div>
+    {% endif %}
+</div>
+
+<div class="section">
+    <h2>Tramos activos por ruta</h2>
+    <div class="table-shell">
+        <div class="table-scroll">
+            <table class="rates-table">
+                <thead>
+                    <tr>
+                        <th>Ruta</th>
+                        <th>Rango KG</th>
+                        <th>Tarifa USD</th>
+                        <th>Accion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for tier in active_tiers %}
+                    <tr>
+                        <td>{{ tier.route_rate.origin_country }} a {{ tier.route_rate.destination_country }} ({{ tier.route_rate.get_transport_type_display }})</td>
+                        <td>{{ tier.min_weight_kg|es_number }} a {% if tier.max_weight_kg %}{{ tier.max_weight_kg|es_number }}{% else %}en adelante{% endif %}</td>
+                        <td><span class="rate-strong">{{ tier.rate_usd|es_number }}</span></td>
+                        <td class="tier-actions">
+                            <form method="post">
+                                {% csrf_token %}
+                                <input type="hidden" name="tier_id" value="{{ tier.id }}">
+                                <button class="btn btn-danger btn-xs" type="submit" name="deactivate_tier" value="1">Desactivar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4">No hay tramos activos.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 <script>
 (function () {
-    const searchInput = document.getElementById('country-search');
-    const onlyActive = document.getElementById('only-active');
-    const rows = Array.from(document.querySelectorAll('#rates-table-body tr'));
+    const searchInput = document.getElementById('route-search');
+    const rows = Array.from(document.querySelectorAll('#rates-table-body tr[data-search]'));
     const resultsMeta = document.getElementById('results-meta');
 
-    function applyFilters() {
+    function applyFilter() {
         const term = (searchInput.value || '').trim().toLowerCase();
-        const activeOnly = !!onlyActive.checked;
         let visibleCount = 0;
-
         rows.forEach((row) => {
-            const country = row.dataset.country || '';
-            const hasRate = row.dataset.hasRate === '1';
-            const matchesSearch = !term || country.includes(term);
-            const matchesActive = !activeOnly || hasRate;
-            const visible = matchesSearch && matchesActive;
+            const haystack = row.dataset.search || '';
+            const visible = !term || haystack.includes(term);
             row.style.display = visible ? '' : 'none';
             if (visible) visibleCount += 1;
         });
-
-        resultsMeta.textContent = `Mostrando ${visibleCount} paises`;
+        resultsMeta.textContent = `Mostrando ${visibleCount} rutas`;
     }
 
-    searchInput.addEventListener('input', applyFilters);
-    onlyActive.addEventListener('change', applyFilters);
-    applyFilters();
+    searchInput.addEventListener('input', applyFilter);
+    applyFilter();
 })();
 </script>
 {% endblock %}
