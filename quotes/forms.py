@@ -95,10 +95,8 @@ class OriginLocationForm(forms.ModelForm):
 
 
 class LocationRateForm(forms.Form):
-    transport_type = forms.ChoiceField(choices=Quote.TransportType.choices, label="Tipo de transporte")
     origin_country = forms.ChoiceField(choices=(), label="Pais origen")
     destination_country = forms.ChoiceField(choices=(), label="Pais destino")
-    rate_usd = forms.DecimalField(label="Tarifa unica (USD)", min_value=Decimal("0.0001"), max_digits=12, decimal_places=4)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -113,9 +111,12 @@ class RouteRateTierForm(forms.Form):
     max_weight_kg = forms.DecimalField(label="Hasta KG", required=False, min_value=Decimal("0"), max_digits=12, decimal_places=3)
     rate_usd = forms.DecimalField(label="Tarifa USD", min_value=Decimal("0.0001"), max_digits=12, decimal_places=4)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, transport_type: str | None = None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["route_rate"].queryset = RouteRate.objects.filter(is_active=True).order_by(
+        queryset = RouteRate.objects.filter(is_active=True)
+        if transport_type:
+            queryset = queryset.filter(transport_type=transport_type)
+        self.fields["route_rate"].queryset = queryset.order_by(
             "origin_country",
             "destination_country",
             "transport_type",

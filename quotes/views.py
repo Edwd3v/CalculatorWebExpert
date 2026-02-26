@@ -12,6 +12,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Avg, Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 
 from .constants.countries import WORLD_COUNTRY_NAMES
@@ -229,18 +230,29 @@ def admin_rates(request):
         messages.error(request, "No tienes permisos para acceder al panel de administracion.")
         return redirect("quotes:new_quote")
 
+    allowed_transports = {choice[0] for choice in Quote.TransportType.choices}
+    active_transport = (
+        request.POST.get("transport")
+        or request.POST.get("rate-transport_type")
+        or request.GET.get("transport")
+        or Quote.TransportType.AIR
+    ).upper()
+    if active_transport not in allowed_transports:
+        active_transport = Quote.TransportType.AIR
+
+    def redirect_to_active_transport():
+        return redirect(f"{reverse('quotes:admin_rates')}?{urlencode({'transport': active_transport})}")
+
     if request.method == "POST":
         if "create_rate" in request.POST:
             rate_form = LocationRateForm(request.POST, prefix="rate")
-            tier_form = RouteRateTierForm(prefix="tier")
+            tier_form = RouteRateTierForm(prefix="tier", transport_type=active_transport)
             if rate_form.is_valid():
                 origin_country = normalize_country_name(rate_form.cleaned_data["origin_country"])
                 destination_country = normalize_country_name(rate_form.cleaned_data["destination_country"])
-                transport_type = rate_form.cleaned_data["transport_type"]
-                rate_value = rate_form.cleaned_data["rate_usd"]
                 if origin_country == destination_country:
                     messages.error(request, "Origen y destino no pueden ser iguales para configurar una ruta.")
-                    return redirect("quotes:admin_rates")
+                    return redirect_to_active_transport()
                 today = date.today()
                 try:
                     with transaction.atomic():
@@ -248,7 +260,7 @@ def admin_rates(request):
                         open_rates = RouteRate.objects.select_for_update().filter(
                             origin_country=origin_country,
                             destination_country=destination_country,
-                            transport_type=transport_type,
+                            transport_type=active_transport,
                             is_active=True,
                             effective_to__isnull=True,
                         )
@@ -257,8 +269,8 @@ def admin_rates(request):
                         new_rate = RouteRate(
                             origin_country=origin_country,
                             destination_country=destination_country,
-                            transport_type=transport_type,
-                            rate_usd=rate_value,
+                            transport_type=active_transport,
+                            rate_usd=Decimal("0"),
                             effective_from=today,
                             is_active=True,
                         )
@@ -273,8 +285,8 @@ def admin_rates(request):
                             metadata={
                                 "origin_country": origin_country,
                                 "destination_country": destination_country,
-                                "transport_type": transport_type,
-                                "rate_usd": rate_value,
+                                "transport_type": active_transport,
+                                "rate_usd": Decimal("0"),
                             },
                         )
                 except IntegrityError:
@@ -282,11 +294,11 @@ def admin_rates(request):
                         request,
                         "No fue posible guardar la tarifa por una actualizacion concurrente. Intenta nuevamente.",
                     )
-                    return redirect("quotes:admin_rates")
+                    return redirect_to_active_transport()
                 messages.success(request, "Tarifa creada correctamente.")
-                return redirect("quotes:admin_rates")
+                return redirect_to_active_transport()
         elif "create_tier" in request.POST:
-            tier_form = RouteRateTierForm(request.POST, prefix="tier")
+            tier_form = RouteRateTierForm(request.POST, prefix="tier", transport_type=active_transport)
             rate_form = LocationRateForm(prefix="rate")
             if tier_form.is_valid():
                 route_rate = tier_form.cleaned_data["route_rate"]
@@ -318,12 +330,16 @@ def admin_rates(request):
                     tier_form.add_error(None, str(exc))
                 else:
                     messages.success(request, "Tramo tarifario creado correctamente.")
-                    return redirect("quotes:admin_rates")
+                    return redirect_to_active_transport()
         elif "deactivate_tier" in request.POST:
-            tier_form = RouteRateTierForm(prefix="tier")
+            tier_form = RouteRateTierForm(prefix="tier", transport_type=active_transport)
             rate_form = LocationRateForm(prefix="rate")
             tier_id = request.POST.get("tier_id", "").strip()
-            tier = RouteRateTier.objects.filter(id=tier_id, is_active=True).first()
+            tier = RouteRateTier.objects.filter(
+                id=tier_id,
+                is_active=True,
+                route_rate__transport_type=active_transport,
+            ).first()
             if tier:
                 tier.is_active = False
                 tier.save(update_fields=["is_active", "updated_at"])
@@ -335,17 +351,21 @@ def admin_rates(request):
                     metadata={"route_rate_id": tier.route_rate_id},
                 )
                 messages.success(request, "Tramo desactivado.")
-                return redirect("quotes:admin_rates")
+                return redirect_to_active_transport()
         else:
             rate_form = LocationRateForm(prefix="rate")
-            tier_form = RouteRateTierForm(prefix="tier")
+            tier_form = RouteRateTierForm(prefix="tier", transport_type=active_transport)
     else:
         rate_form = LocationRateForm(prefix="rate")
-        tier_form = RouteRateTierForm(prefix="tier")
+        tier_form = RouteRateTierForm(prefix="tier", transport_type=active_transport)
 
     today = date.today()
     effective_route_rows = (
-        RouteRate.objects.filter(is_active=True, effective_from__lte=today)
+        RouteRate.objects.filter(
+            is_active=True,
+            effective_from__lte=today,
+            transport_type=active_transport,
+        )
         .filter(Q(effective_to__isnull=True) | Q(effective_to__gte=today))
         .order_by("origin_country", "destination_country", "transport_type", "-effective_from", "-id")
     )
@@ -359,7 +379,10 @@ def admin_rates(request):
                 "rate": route_rate,
             }
         )
-    active_tiers = RouteRateTier.objects.select_related("route_rate").filter(is_active=True).order_by(
+    active_tiers = RouteRateTier.objects.select_related("route_rate").filter(
+        is_active=True,
+        route_rate__transport_type=active_transport,
+    ).order_by(
         "route_rate__origin_country",
         "route_rate__destination_country",
         "route_rate__transport_type",
@@ -374,6 +397,8 @@ def admin_rates(request):
             "tier_form": tier_form,
             "route_rows": route_rows,
             "active_tiers": active_tiers,
+            "active_transport": active_transport,
+            "transport_tabs": Quote.TransportType.choices,
         },
     )
 

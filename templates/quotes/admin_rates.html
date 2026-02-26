@@ -3,18 +3,55 @@
 {% block title %}Tarifas por ruta{% endblock %}
 {% block content %}
 <style>
-    .page-title h1 { color: #065f46; }
+    :root {
+        {% if active_transport == "AIR" %}
+        --accent: #0369a1;
+        --accent-strong: #075985;
+        --accent-soft: #e0f2fe;
+        --accent-border: #bae6fd;
+        --accent-shadow: rgba(3, 105, 161, 0.12);
+        {% else %}
+        --accent: #0f766e;
+        --accent-strong: #115e59;
+        --accent-soft: #ccfbf1;
+        --accent-border: #99f6e4;
+        --accent-shadow: rgba(15, 118, 110, 0.12);
+        {% endif %}
+    }
+    .page-title h1 { color: var(--accent-strong); }
+    .transport-tabs {
+        margin-top: 12px;
+        display: inline-flex;
+        gap: 8px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 6px;
+    }
+    .transport-tab {
+        text-decoration: none;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 13px;
+        font-weight: 700;
+        color: #334155;
+    }
+    .transport-tab:hover { background: #f1f5f9; }
+    .transport-tab.is-active {
+        background: var(--accent-soft);
+        color: var(--accent-strong);
+    }
     .toolbar {
         margin-top: 10px;
-        border: 1px solid #b7e4d1;
+        border: 1px solid var(--accent-border);
         border-radius: 14px;
-        background: linear-gradient(180deg, #f5fbf8 0%, #ffffff 70%);
+        background: linear-gradient(180deg, color-mix(in srgb, var(--accent-soft) 45%, #ffffff) 0%, #ffffff 70%);
         padding: 12px;
-        box-shadow: 0 12px 24px rgba(6, 95, 70, 0.08);
+        box-shadow: 0 12px 24px var(--accent-shadow);
     }
     .toolbar form {
         display: grid;
-        grid-template-columns: 1fr 1fr 1fr 1fr auto auto;
+        grid-template-columns: 1fr 1fr auto auto;
         gap: 10px;
         align-items: end;
     }
@@ -36,8 +73,8 @@
         font-size: 13px;
     }
     .tool-field select:focus, .tool-field input:focus {
-        outline: 2px solid rgba(6, 95, 70, 0.16);
-        border-color: #047857;
+        outline: 2px solid color-mix(in srgb, var(--accent) 25%, transparent);
+        border-color: var(--accent);
     }
     .table-toolbar {
         margin-top: 14px;
@@ -55,14 +92,14 @@
         background: #fff;
     }
     .search-box input:focus {
-        outline: 2px solid rgba(6, 95, 70, 0.16);
-        border-color: #047857;
+        outline: 2px solid color-mix(in srgb, var(--accent) 25%, transparent);
+        border-color: var(--accent);
     }
     .table-shell {
         margin-top: 10px;
         border-radius: 14px;
         background: #fff;
-        box-shadow: 0 10px 22px rgba(6, 95, 70, 0.07);
+        box-shadow: 0 10px 22px var(--accent-shadow);
         overflow: hidden;
     }
     .table-scroll { max-height: 54vh; overflow: auto; }
@@ -71,44 +108,29 @@
         position: sticky;
         top: 0;
         z-index: 2;
-        background: #ecfdf5;
+        background: color-mix(in srgb, var(--accent-soft) 60%, #ffffff);
         font-size: 11px;
         letter-spacing: 0.04em;
         text-transform: uppercase;
         color: #475467;
         text-align: left;
         padding: 10px 12px;
-        border-bottom: 1px solid #d1fae5;
+        border-bottom: 1px solid var(--accent-border);
     }
     .rates-table tbody td {
         border-bottom: 1px solid #f1f5f9;
         padding: 10px 12px;
         vertical-align: top;
     }
-    .rates-table tbody tr:hover { background: #f7fcfa; }
+    .rates-table tbody tr:hover { background: color-mix(in srgb, var(--accent-soft) 35%, #ffffff); }
     .route-name { font-weight: 600; color: #111827; }
-    .transport-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        border-radius: 999px;
-        padding: 4px 9px;
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.02em;
-    }
-    .transport-badge svg { width: 12px; height: 12px; fill: none; stroke-width: 1.7; }
-    .transport-air { background: #e0f2fe; color: #075985; }
-    .transport-air svg { stroke: #0369a1; }
-    .transport-sea { background: #dcfce7; color: #166534; }
-    .transport-sea svg { stroke: #15803d; }
     .rate-strong { font-weight: 700; color: #111827; }
     .rate-meta { color: #64748b; font-size: 11px; }
     .tier-toolbar {
         margin-top: 16px;
-        border: 1px solid #d1fae5;
+        border: 1px solid var(--accent-border);
         border-radius: 12px;
-        background: #f8fffc;
+        background: color-mix(in srgb, var(--accent-soft) 40%, #ffffff);
         padding: 10px;
     }
     .tier-toolbar form {
@@ -118,8 +140,8 @@
         align-items: end;
     }
     .tier-actions form { margin: 0; }
-    .btn { background: #065f46; }
-    .btn:hover { background: #064e3b; }
+    .btn { background: var(--accent-strong); }
+    .btn:hover { background: var(--accent); }
     .btn.btn-secondary { background: #c4c9d1; color: #111827; border: 1px solid #9ca3af; }
     .btn.btn-secondary:hover { background: #b5bcc6; }
     .btn.btn-danger { background: #b91c1c; }
@@ -135,16 +157,26 @@
 
 <div class="page-title">
     <h1>Tarifas por ruta</h1>
-    <p class="subtle">Define tarifa base por ruta y despues los tramos de peso que aplican el precio real.</p>
+    <p class="subtle">Define rutas activas y despues los tramos de peso que aplican el precio real.</p>
+</div>
+
+<div class="transport-tabs" role="tablist" aria-label="Tipo de transporte">
+    {% for transport_value, transport_label in transport_tabs %}
+    <a
+        class="transport-tab {% if transport_value == active_transport %}is-active{% endif %}"
+        href="?transport={{ transport_value }}"
+        role="tab"
+        aria-selected="{% if transport_value == active_transport %}true{% else %}false{% endif %}"
+    >
+        {{ transport_label }}
+    </a>
+    {% endfor %}
 </div>
 
 <div class="toolbar">
     <form method="post">
         {% csrf_token %}
-        <div class="tool-field">
-            <label for="{{ rate_form.transport_type.id_for_label }}">Transporte</label>
-            {{ rate_form.transport_type }}
-        </div>
+        <input type="hidden" name="transport" value="{{ active_transport }}">
         <div class="tool-field">
             <label for="{{ rate_form.origin_country.id_for_label }}">Pais origen</label>
             {{ rate_form.origin_country }}
@@ -152,10 +184,6 @@
         <div class="tool-field">
             <label for="{{ rate_form.destination_country.id_for_label }}">Pais destino</label>
             {{ rate_form.destination_country }}
-        </div>
-        <div class="tool-field">
-            <label for="{{ rate_form.rate_usd.id_for_label }}">Tarifa base (USD)</label>
-            {{ rate_form.rate_usd }}
         </div>
         <button class="btn btn-compact" type="submit" name="create_rate" value="1">Guardar ruta</button>
         <a class="btn btn-secondary btn-compact" href="{% url 'quotes:admin_panel' %}">Volver</a>
@@ -168,7 +196,7 @@
 <div class="section">
     <div class="table-toolbar">
         <div class="search-box">
-            <input id="route-search" type="search" placeholder="Buscar ruta o transporte..." autocomplete="off">
+            <input id="route-search" type="search" placeholder="Buscar ruta..." autocomplete="off">
         </div>
     </div>
 
@@ -178,33 +206,17 @@
                 <thead>
                     <tr>
                         <th>Ruta</th>
-                        <th>Transporte</th>
-                        <th>Tarifa Base USD</th>
                         <th>Vigencia</th>
                     </tr>
                 </thead>
                 <tbody id="rates-table-body">
                     {% for row in route_rows %}
-                    <tr data-search="{{ row.origin_country|lower }} {{ row.destination_country|lower }} {{ row.transport_type|lower }}">
+                    <tr data-search="{{ row.origin_country|lower }} {{ row.destination_country|lower }}">
                         <td><span class="route-name">{{ row.origin_country }} a {{ row.destination_country }}</span></td>
-                        <td>
-                            {% if row.transport_type == "AIR" %}
-                            <span class="transport-badge transport-air">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 13.5L10 12L21 5.5L19.5 4L10.5 8L7 5H5L6 9L2.5 11L2 13.5Z"></path><path d="M10.5 12.5L14.5 18H12.5L9.5 14.5L10.5 12.5Z"></path></svg>
-                                Aereo
-                            </span>
-                            {% else %}
-                            <span class="transport-badge transport-sea">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 14H21L18 9H6L3 14Z"></path><path d="M7 9V6H12V9"></path><path d="M3 17C4.4 18.3 5.8 18.3 7.2 17C8.6 15.7 10 15.7 11.4 17C12.8 18.3 14.2 18.3 15.6 17C17 15.7 18.4 15.7 19.8 17C20.5 17.6 21.2 17.9 22 18"></path></svg>
-                                Maritimo
-                            </span>
-                            {% endif %}
-                        </td>
-                        <td><span class="rate-strong">{{ row.rate.rate_usd|es_number }}</span></td>
                         <td><span class="rate-meta">Desde {{ row.rate.effective_from|date:"d/m/Y" }}</span></td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="4">No hay tarifas de ruta activas.</td></tr>
+                    <tr><td colspan="2">No hay tarifas de ruta activas para este transporte.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -216,6 +228,7 @@
 <div class="tier-toolbar">
     <form method="post">
         {% csrf_token %}
+        <input type="hidden" name="transport" value="{{ active_transport }}">
         <div class="tool-field">
             <label for="{{ tier_form.route_rate.id_for_label }}">Ruta</label>
             {{ tier_form.route_rate }}
@@ -255,19 +268,20 @@
                 <tbody>
                     {% for tier in active_tiers %}
                     <tr>
-                        <td>{{ tier.route_rate.origin_country }} a {{ tier.route_rate.destination_country }} ({{ tier.route_rate.get_transport_type_display }})</td>
+                        <td>{{ tier.route_rate.origin_country }} a {{ tier.route_rate.destination_country }}</td>
                         <td>{{ tier.min_weight_kg|es_number }} a {% if tier.max_weight_kg %}{{ tier.max_weight_kg|es_number }}{% else %}en adelante{% endif %}</td>
                         <td><span class="rate-strong">{{ tier.rate_usd|es_number }}</span></td>
                         <td class="tier-actions">
                             <form method="post">
                                 {% csrf_token %}
+                                <input type="hidden" name="transport" value="{{ active_transport }}">
                                 <input type="hidden" name="tier_id" value="{{ tier.id }}">
                                 <button class="btn btn-danger btn-xs" type="submit" name="deactivate_tier" value="1">Desactivar</button>
                             </form>
                         </td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="4">No hay tramos activos.</td></tr>
+                    <tr><td colspan="4">No hay tramos activos para este transporte.</td></tr>
                     {% endfor %}
                 </tbody>
             </table>

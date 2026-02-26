@@ -207,7 +207,6 @@ class QuotePermissionsAndAdminTests(TestCase):
                 "rate-transport_type": "SEA",
                 "rate-origin_country": self.country_name,
                 "rate-destination_country": self.destination_name,
-                "rate-rate_usd": "7.2500",
             },
             follow=True,
         )
@@ -217,7 +216,7 @@ class QuotePermissionsAndAdminTests(TestCase):
                 origin_country=self.country_name,
                 destination_country=self.destination_name,
                 transport_type="SEA",
-                rate_usd=Decimal("7.2500"),
+                rate_usd=Decimal("0"),
             ).exists()
         )
 
@@ -238,7 +237,6 @@ class QuotePermissionsAndAdminTests(TestCase):
                 "rate-transport_type": "SEA",
                 "rate-origin_country": self.country_name,
                 "rate-destination_country": self.destination_name,
-                "rate-rate_usd": "6.0000",
             },
             follow=True,
         )
@@ -278,7 +276,6 @@ class QuotePermissionsAndAdminTests(TestCase):
                 "rate-transport_type": "SEA",
                 "rate-origin_country": self.country_name,
                 "rate-destination_country": self.destination_name,
-                "rate-rate_usd": "9.9900",
             },
             follow=True,
         )
