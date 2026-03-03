@@ -27,6 +27,11 @@ DEBUG = env_bool("DEBUG", True)
 ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "127.0.0.1,localhost")
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", "")
 
+# Render and similar platforms may probe the app through local/private hosts during startup.
+for local_host in ("127.0.0.1", "localhost", "0.0.0.0", "::1"):
+    if local_host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(local_host)
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
