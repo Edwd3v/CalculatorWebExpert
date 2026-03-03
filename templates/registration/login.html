@@ -1,10 +1,155 @@
 {% extends 'base.html' %}
 {% block title %}Login{% endblock %}
 {% block content %}
-<h1>Iniciar sesion</h1>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button class="btn" type="submit">Entrar</button>
-</form>
+<style>
+    main {
+        max-width: none;
+        min-height: calc(100vh - 96px);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 28px 20px 44px;
+    }
+    .card {
+        width: 100%;
+        max-width: 410px;
+        border-radius: 22px;
+        padding: 34px 30px 30px;
+        background: linear-gradient(180deg, #fffdf9 0%, #ffffff 75%);
+        border: 1px solid #dfd1c2;
+        box-shadow: 0 24px 52px rgba(17, 12, 8, 0.14);
+    }
+    .login-wrap {
+        display: grid;
+        gap: 14px;
+    }
+    .login-title {
+        margin: 0 0 4px;
+        font-family: "Space Grotesk", sans-serif;
+        font-size: clamp(28px, 3.8vw, 32px);
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        color: var(--ink);
+    }
+    .login-subtitle {
+        margin: 0;
+        color: #64594f;
+        font-size: 14px;
+        line-height: 1.45;
+    }
+    .login-form {
+        display: grid;
+        gap: 16px;
+    }
+    .field {
+        display: grid;
+        gap: 7px;
+    }
+    .field label {
+        margin: 0;
+        font-size: 13px;
+        letter-spacing: 0.02em;
+        font-weight: 600;
+        color: #3c352f;
+    }
+    .field input {
+        width: 100%;
+        padding: 14px 14px;
+        border-radius: 12px;
+        border: 1px solid #d9c8b8;
+        background: #fff;
+        font-size: 15px;
+        color: #1f1b16;
+        transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+    }
+    .field input:focus {
+        outline: none;
+        border-color: #0d3b2e;
+        box-shadow: 0 0 0 4px rgba(13, 59, 46, 0.18);
+        background: #fffdfb;
+    }
+    .login-errors {
+        margin: 0;
+        padding: 10px 12px;
+        list-style: none;
+        border-radius: 10px;
+        background: #fff1f1;
+        border: 1px solid #ffc9c9;
+        color: #a32020;
+        font-size: 13px;
+    }
+    .login-btn {
+        width: 100%;
+        margin-top: 4px;
+        padding: 13px 16px;
+        border-radius: 12px;
+        border: 0;
+        background: #0d3b2e;
+        color: #fff;
+        font-weight: 700;
+        font-size: 15px;
+        letter-spacing: 0.02em;
+        cursor: pointer;
+        transition: background-color .18s ease, transform .18s ease;
+    }
+    .login-btn:hover { background: #0a2f25; }
+    .login-btn:focus-visible {
+        outline: 2px solid #c7702a;
+        outline-offset: 2px;
+    }
+    .login-btn:active { transform: translateY(1px); }
+    @media (max-width: 560px) {
+        .card {
+            max-width: 100%;
+            padding: 28px 22px 24px;
+            border-radius: 18px;
+        }
+    }
+</style>
+
+<section class="login-wrap" aria-labelledby="login-title">
+    <div>
+        <h1 id="login-title" class="login-title">Iniciar sesion</h1>
+        <p class="login-subtitle">Accede al cotizador con tus credenciales corporativas.</p>
+    </div>
+
+    {% if form.non_field_errors %}
+        <ul class="login-errors">
+            {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+
+    <form method="post" class="login-form" novalidate>
+        {% csrf_token %}
+
+        <div class="field">
+            <label for="{{ form.username.id_for_label }}">Nombre de usuario</label>
+            {{ form.username }}
+            {% if form.username.errors %}
+                <ul class="errorlist">
+                    {% for error in form.username.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+
+        <div class="field">
+            <label for="{{ form.password.id_for_label }}">Contrasena</label>
+            {{ form.password }}
+            {% if form.password.errors %}
+                <ul class="errorlist">
+                    {% for error in form.password.errors %}
+                        <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+
+        <button class="login-btn" type="submit">Entrar</button>
+    </form>
+</section>
 {% endblock %}
