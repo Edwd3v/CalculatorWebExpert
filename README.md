@@ -94,6 +94,20 @@ En `freight_quote/settings.py`:
 
 - `AIR_VOLUMETRIC_FACTOR`
 
+## Bootstrap de admin en deploy (Render)
+
+El `build.sh` puede crear/actualizar automaticamente un superusuario si defines estas variables de entorno en el servicio:
+
+- `ADMIN_USERNAME`
+- `ADMIN_PASSWORD`
+- `ADMIN_EMAIL` (opcional)
+
+Comportamiento:
+
+- Si `ADMIN_USERNAME` y `ADMIN_PASSWORD` existen, crea el usuario si no existe.
+- Si ya existe, actualiza password, email (si viene) y fuerza `is_staff=True`, `is_superuser=True`, `is_active=True`.
+- Si faltan variables, omite el bootstrap sin romper el deploy.
+
 ## Tests
 
 ```bash
