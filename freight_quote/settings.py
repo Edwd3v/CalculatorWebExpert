@@ -28,9 +28,14 @@ ALLOWED_HOSTS = env_list("ALLOWED_HOSTS", "127.0.0.1,localhost")
 CSRF_TRUSTED_ORIGINS = env_list("CSRF_TRUSTED_ORIGINS", "")
 
 # Render and similar platforms may probe the app through local/private hosts during startup.
-for local_host in ("127.0.0.1", "localhost", "0.0.0.0", "::1"):
+for local_host in ("127.0.0.1", "localhost", "0.0.0.0", "::1", "[::1]"):
     if local_host not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(local_host)
+
+# Render sets this env var with the public service hostname.
+render_hostname = os.getenv("RENDER_EXTERNAL_HOSTNAME", "").strip()
+if render_hostname and render_hostname not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(render_hostname)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
