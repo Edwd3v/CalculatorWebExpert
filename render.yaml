@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: calculator-web-expert
+    runtime: python
+    plan: free
+    buildCommand: ./build.sh
+    startCommand: gunicorn freight_quote.wsgi:application
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: calculator-web-expert.onrender.com
+      - key: CSRF_TRUSTED_ORIGINS
+        value: https://calculator-web-expert.onrender.com
+      - key: SECRET_KEY
+        generateValue: true
