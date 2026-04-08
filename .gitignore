@@ -4,3 +4,5 @@ db.sqlite3
 .venv/
 .env
 staticfiles/
+.agents/
+skills-lock.json
