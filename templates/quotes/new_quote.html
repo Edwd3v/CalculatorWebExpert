@@ -2,25 +2,19 @@
 {% block title %}Nueva cotizacion{% endblock %}
 {% block content %}
 <style>
-    body {
-        background: #f5f6f7;
-    }
-    main {
-        max-width: 1180px;
-    }
-    .card {
-        border-radius: 30px;
-        border: 1px solid #e5e7eb;
-        box-shadow: 0 22px 55px rgba(15, 23, 42, 0.08);
-        background: #ffffff;
-        padding: 34px;
-    }
-    .quote-shell {
+    .quote-page {
+        --page-accent: #111827;
+        --page-accent-strong: #0b1220;
+        --page-accent-soft: #f3f4f6;
+        --page-accent-border: #d0d5dd;
+        --panel: #ffffff;
+        --border: #e4e7ec;
+        --border-strong: #d0d5dd;
+        --ink-soft: #667085;
         display: grid;
         gap: 22px;
     }
-    .section-box {
-        border: 1px solid #ebedf0;
+    .quote-page .section-card {
         border-radius: 22px;
         padding: 22px;
         background: #fcfcfd;
@@ -42,21 +36,17 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 16px;
     }
-    .field label {
-        font-size: 13px;
-        color: #475467;
+    .quote-page .field label {
         margin-bottom: 8px;
-        font-weight: 600;
+        font-size: 13px;
+        letter-spacing: 0;
+        text-transform: none;
+        color: #475467;
     }
-    input, select {
+    .quote-page input,
+    .quote-page select {
         border-radius: 12px;
-        border: 1px solid #d0d5dd;
-        background: #fff;
         padding: 12px 13px;
-    }
-    input:focus, select:focus {
-        border-color: #344054;
-        outline: 3px solid rgba(52, 64, 84, 0.12);
     }
     .transport-picker {
         display: grid;
@@ -98,16 +88,6 @@
         font-size: 12px;
         color: #667085;
     }
-    .sr-only {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        padding: 0;
-        margin: -1px;
-        overflow: hidden;
-        clip: rect(0, 0, 0, 0);
-        border: 0;
-    }
     .pieces-head {
         display: grid;
         grid-template-columns: minmax(180px, 280px) 1fr;
@@ -143,30 +123,19 @@
         margin-bottom: 6px;
     }
     .mini-label {
-        display: block;
         font-size: 11px;
         line-height: 1.2;
         color: #667085;
         margin-bottom: 6px;
         font-weight: 600;
+        text-transform: none;
+        letter-spacing: 0;
     }
     .actions {
         justify-content: flex-end;
         margin-top: 10px;
     }
-    .btn {
-        background: #111827;
-        border-radius: 12px;
-        padding: 12px 18px;
-    }
-    .btn:hover {
-        background: #0b1220;
-    }
     @media (max-width: 900px) {
-        .card {
-            padding: 22px;
-            border-radius: 22px;
-        }
         .logistics-grid,
         .transport-picker,
         .pieces-head {
@@ -178,7 +147,7 @@
     }
 </style>
 
-<div class="quote-shell">
+<div class="quote-shell quote-page">
     <div class="page-title">
         <h1>Nueva cotizacion</h1>
         <p class="subtle">Flujo simplificado para equipo comercial.</p>
@@ -188,7 +157,7 @@
         {% csrf_token %}
         {{ form.non_field_errors }}
 
-        <section class="section-box">
+        <section class="section-box section-card">
             <div class="section-head">
                 <h2 class="section-title">Logistica</h2>
                 <p class="section-subtitle">Define los paises de salida y llegada.</p>
@@ -207,7 +176,7 @@
             </div>
         </section>
 
-        <section class="section-box">
+        <section class="section-box section-card">
             <div class="section-head">
                 <h2 class="section-title">Transporte</h2>
                 <p class="section-subtitle">Selecciona la modalidad para el calculo.</p>
@@ -241,7 +210,7 @@
             {{ form.transport_type.errors }}
         </section>
 
-        <section class="section-box">
+        <section class="section-box section-card">
             <div class="section-head">
                 <h2 class="section-title">Carga</h2>
                 <p class="section-subtitle">Ingresa cantidad y detalle dimensional por pieza.</p>

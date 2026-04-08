@@ -2,7 +2,14 @@
 {% block title %}Gestion de usuarios{% endblock %}
 {% block content %}
 <style>
-    .page-title h1 {
+    .admin-users-page {
+        --page-accent: #3730a3;
+        --page-accent-strong: #312e81;
+        --page-accent-soft: #eef2ff;
+        --page-accent-border: #c7d2fe;
+        --ink-soft: #64748b;
+    }
+    .admin-users-page .page-title h1 {
         color: #3730a3;
     }
     .user-shell {
@@ -12,7 +19,6 @@
     .section-card {
         border-radius: 16px;
         background: linear-gradient(180deg, #f8f8ff 0%, #ffffff 70%);
-        box-shadow: 0 14px 28px rgba(55, 48, 163, 0.08);
         padding: 16px;
     }
     .form-grid {
@@ -21,26 +27,13 @@
         gap: 10px 12px;
     }
     .field label {
-        display: block;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.04em;
         color: #6b7280;
         margin-bottom: 4px;
-        font-weight: 600;
     }
-    .field input {
-        width: 100%;
-        border: 1px solid #cbd5e1;
-        border-radius: 10px;
-        background: #fff;
-        padding: 9px 10px;
-        font-size: 13px;
-    }
-    .field input:focus {
-        outline: 2px solid rgba(55, 48, 163, 0.16);
-        border-color: #4338ca;
-    }
+    .field input { padding: 9px 10px; font-size: 13px; }
     .field.full {
         grid-column: span 2;
     }
@@ -130,16 +123,8 @@
         margin-bottom: 10px;
     }
     .search-box input {
-        width: 100%;
-        border: 1px solid #cbd5e1;
-        border-radius: 10px;
         padding: 10px 12px;
         font-size: 14px;
-        background: #fff;
-    }
-    .search-box input:focus {
-        outline: 2px solid rgba(55, 48, 163, 0.16);
-        border-color: #4338ca;
     }
     .quick-filters {
         display: inline-flex;
@@ -211,26 +196,6 @@
         color: #64748b;
         font-size: 12px;
     }
-    .btn {
-        background: #3730a3;
-    }
-    .btn:hover {
-        background: #312e81;
-    }
-    .btn.btn-secondary {
-        background: #c4c9d1;
-        color: #111827;
-        border: 1px solid #9ca3af;
-    }
-    .btn.btn-secondary:hover {
-        background: #b5bcc6;
-    }
-    .btn.btn-compact {
-        padding: 10px 12px;
-        min-width: 96px;
-        font-size: 13px;
-        border-radius: 10px;
-    }
     @media (max-width: 900px) {
         .form-grid {
             grid-template-columns: 1fr;
@@ -246,6 +211,7 @@
     }
 </style>
 
+<div class="admin-users-page">
 <div class="page-title">
     <h1>Gestion de usuarios</h1>
     <p class="subtle">Crea usuarios nuevos y define permisos administrativos.</p>
@@ -343,6 +309,7 @@
             </div>
         </div>
 
+        <div class="table-shell">
         <table class="users-table">
             <thead>
                 <tr>
@@ -373,6 +340,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div>
         <div id="users-meta" class="result-meta"></div>
     </div>
 </div>
@@ -438,4 +406,5 @@
     applyUserFilters();
 })();
 </script>
+</div>
 {% endblock %}

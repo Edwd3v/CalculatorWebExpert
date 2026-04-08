@@ -8,6 +8,14 @@ from django.db import models
 from django.db.models import Q
 
 
+class OriginLocationQuerySet(models.QuerySet):
+    def active(self):
+        return self.filter(is_active=True)
+
+    def for_country_and_type(self, *, country: str, location_type: str):
+        return self.active().filter(country=country, location_type=location_type)
+
+
 class OriginLocation(models.Model):
     class LocationType(models.TextChoices):
         AIRPORT = "AIRPORT", "Aeropuerto"
@@ -20,8 +28,13 @@ class OriginLocation(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    objects = OriginLocationQuerySet.as_manager()
+
     class Meta:
         ordering = ["location_type", "code"]
+        indexes = [
+            models.Index(fields=["country", "location_type", "is_active"], name="quotes_origin_lookup_idx"),
+        ]
 
     def __str__(self) -> str:
         return f"{self.code} - {self.name}"
@@ -43,8 +56,21 @@ class LocationRate(models.Model):
     )
     updated_at = models.DateTimeField(auto_now=True)
 
+    class QuerySet(models.QuerySet):
+        def effective_on(self, target_date: date):
+            return (
+                self.filter(is_active=True, effective_from__lte=target_date)
+                .filter(Q(effective_to__isnull=True) | Q(effective_to__gte=target_date))
+                .order_by("-effective_from", "-id")
+            )
+
+    objects = QuerySet.as_manager()
+
     class Meta:
         ordering = ["-effective_from", "-id"]
+        indexes = [
+            models.Index(fields=["location", "is_active", "effective_from"], name="quotes_loc_rate_lookup_idx"),
+        ]
         constraints = [
             models.UniqueConstraint(
                 fields=["location"],
@@ -90,8 +116,32 @@ class RouteRate(models.Model):
     )
     updated_at = models.DateTimeField(auto_now=True)
 
+    class QuerySet(models.QuerySet):
+        def effective_on(self, target_date: date):
+            return (
+                self.filter(is_active=True, effective_from__lte=target_date)
+                .filter(Q(effective_to__isnull=True) | Q(effective_to__gte=target_date))
+                .order_by("origin_country", "destination_country", "transport_type", "-effective_from", "-id")
+            )
+
+        def for_route(self, *, origin_country: str, destination_country: str, transport_type: str):
+            return self.filter(
+                origin_country=origin_country,
+                destination_country=destination_country,
+                transport_type=transport_type,
+            )
+
+    objects = QuerySet.as_manager()
+
     class Meta:
         ordering = ["origin_country", "destination_country", "transport_type", "-effective_from", "-id"]
+        indexes = [
+            models.Index(
+                fields=["origin_country", "destination_country", "transport_type", "is_active"],
+                name="quotes_route_lookup_idx",
+            ),
+            models.Index(fields=["transport_type", "effective_from"], name="quotes_route_transport_idx"),
+        ]
         constraints = [
             models.UniqueConstraint(
                 fields=["origin_country", "destination_country", "transport_type"],
@@ -118,8 +168,20 @@ class RouteRateTier(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class QuerySet(models.QuerySet):
+        def active(self):
+            return self.filter(is_active=True)
+
+        def for_route_rate(self, route_rate: "RouteRate"):
+            return self.active().filter(route_rate=route_rate).order_by("min_weight_kg", "id")
+
+    objects = QuerySet.as_manager()
+
     class Meta:
         ordering = ["route_rate_id", "min_weight_kg", "id"]
+        indexes = [
+            models.Index(fields=["route_rate", "is_active", "min_weight_kg"], name="quotes_tier_lookup_idx"),
+        ]
 
     def __str__(self) -> str:
         top = self.max_weight_kg if self.max_weight_kg is not None else "INF"
@@ -143,7 +205,7 @@ class RouteRateTier(models.Model):
         new_min = self.min_weight_kg
         new_max = self.max_weight_kg
 
-        for tier in others:
+        for tier in others.only("min_weight_kg", "max_weight_kg").iterator():
             old_min = tier.min_weight_kg
             old_max = tier.max_weight_kg
             overlap = (new_max is None or old_min <= new_max) and (old_max is None or new_min <= old_max)
@@ -213,8 +275,35 @@ class Quote(models.Model):
     total_usd = models.DecimalField(max_digits=12, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class QuerySet(models.QuerySet):
+        def with_result_related(self):
+            return self.select_related(
+                "user",
+                "origin_location",
+                "destination_location",
+                "applied_rate",
+                "applied_route_rate",
+                "applied_route_rate_tier",
+            ).prefetch_related("items")
+
+        def with_history_related(self):
+            return self.select_related("user", "origin_location", "destination_location")
+
+        def for_user_access(self, user):
+            queryset = self.with_result_related()
+            if user.is_staff:
+                return queryset
+            return queryset.filter(user=user)
+
+    objects = QuerySet.as_manager()
+
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["user", "created_at"], name="quotes_user_created_idx"),
+            models.Index(fields=["transport_type", "created_at"], name="quotes_transport_created_idx"),
+            models.Index(fields=["created_at"], name="quotes_created_idx"),
+        ]
 
     def __str__(self) -> str:
         return f"Quote #{self.pk} - {self.user}"
@@ -286,6 +375,9 @@ class AuditLog(models.Model):
 
     class Meta:
         ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(fields=["action", "created_at"], name="quotes_audit_action_idx"),
+        ]
 
     def __str__(self) -> str:
         return f"{self.action} {self.model_name} {self.object_id}".strip()

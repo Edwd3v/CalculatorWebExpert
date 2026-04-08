@@ -3,22 +3,22 @@
 {% block title %}Tarifas por ruta{% endblock %}
 {% block content %}
 <style>
-    :root {
+    .admin-rates-page {
         {% if active_transport == "AIR" %}
-        --accent: #0369a1;
-        --accent-strong: #075985;
-        --accent-soft: #e0f2fe;
-        --accent-border: #bae6fd;
+        --page-accent: #0369a1;
+        --page-accent-strong: #075985;
+        --page-accent-soft: #e0f2fe;
+        --page-accent-border: #bae6fd;
         --accent-shadow: rgba(3, 105, 161, 0.12);
         {% else %}
-        --accent: #0f766e;
-        --accent-strong: #115e59;
-        --accent-soft: #ccfbf1;
-        --accent-border: #99f6e4;
+        --page-accent: #0f766e;
+        --page-accent-strong: #115e59;
+        --page-accent-soft: #ccfbf1;
+        --page-accent-border: #99f6e4;
         --accent-shadow: rgba(15, 118, 110, 0.12);
         {% endif %}
     }
-    .page-title h1 { color: var(--accent-strong); }
+    .admin-rates-page .page-title h1 { color: var(--page-accent-strong); }
     .transport-tabs {
         margin-top: 12px;
         display: inline-flex;
@@ -38,14 +38,14 @@
     }
     .transport-tab:hover { background: #f1f5f9; }
     .transport-tab.is-active {
-        background: var(--accent-soft);
-        color: var(--accent-strong);
+        background: var(--page-accent-soft);
+        color: var(--page-accent-strong);
     }
     .toolbar {
         margin-top: 10px;
-        border: 1px solid var(--accent-border);
+        border: 1px solid var(--page-accent-border);
         border-radius: 14px;
-        background: linear-gradient(180deg, color-mix(in srgb, var(--accent-soft) 45%, #ffffff) 0%, #ffffff 70%);
+        background: linear-gradient(180deg, color-mix(in srgb, var(--page-accent-soft) 45%, #ffffff) 0%, #ffffff 70%);
         padding: 12px;
         box-shadow: 0 12px 24px var(--accent-shadow);
     }
@@ -56,25 +56,15 @@
         align-items: end;
     }
     .tool-field label {
-        display: block;
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 0.04em;
         color: #6b7280;
         margin-bottom: 4px;
-        font-weight: 600;
     }
     .tool-field select, .tool-field input {
-        width: 100%;
-        border: 1px solid #cbd5e1;
-        border-radius: 10px;
-        background: #fff;
         padding: 9px 10px;
         font-size: 13px;
-    }
-    .tool-field select:focus, .tool-field input:focus {
-        outline: 2px solid color-mix(in srgb, var(--accent) 25%, transparent);
-        border-color: var(--accent);
     }
     .table-toolbar {
         margin-top: 14px;
@@ -84,16 +74,8 @@
         align-items: center;
     }
     .search-box input {
-        width: 100%;
-        border: 1px solid #cbd5e1;
-        border-radius: 10px;
         padding: 10px 12px;
         font-size: 14px;
-        background: #fff;
-    }
-    .search-box input:focus {
-        outline: 2px solid color-mix(in srgb, var(--accent) 25%, transparent);
-        border-color: var(--accent);
     }
     .table-shell {
         margin-top: 10px;
@@ -108,29 +90,29 @@
         position: sticky;
         top: 0;
         z-index: 2;
-        background: color-mix(in srgb, var(--accent-soft) 60%, #ffffff);
+        background: color-mix(in srgb, var(--page-accent-soft) 60%, #ffffff);
         font-size: 11px;
         letter-spacing: 0.04em;
         text-transform: uppercase;
         color: #475467;
         text-align: left;
         padding: 10px 12px;
-        border-bottom: 1px solid var(--accent-border);
+        border-bottom: 1px solid var(--page-accent-border);
     }
     .rates-table tbody td {
         border-bottom: 1px solid #f1f5f9;
         padding: 10px 12px;
         vertical-align: top;
     }
-    .rates-table tbody tr:hover { background: color-mix(in srgb, var(--accent-soft) 35%, #ffffff); }
+    .rates-table tbody tr:hover { background: color-mix(in srgb, var(--page-accent-soft) 35%, #ffffff); }
     .route-name { font-weight: 600; color: #111827; }
     .rate-strong { font-weight: 700; color: #111827; }
     .rate-meta { color: #64748b; font-size: 11px; }
     .tier-toolbar {
         margin-top: 16px;
-        border: 1px solid var(--accent-border);
+        border: 1px solid var(--page-accent-border);
         border-radius: 12px;
-        background: color-mix(in srgb, var(--accent-soft) 40%, #ffffff);
+        background: color-mix(in srgb, var(--page-accent-soft) 40%, #ffffff);
         padding: 10px;
     }
     .tier-toolbar form {
@@ -140,14 +122,6 @@
         align-items: end;
     }
     .tier-actions form { margin: 0; }
-    .btn { background: var(--accent-strong); }
-    .btn:hover { background: var(--accent); }
-    .btn.btn-secondary { background: #c4c9d1; color: #111827; border: 1px solid #9ca3af; }
-    .btn.btn-secondary:hover { background: #b5bcc6; }
-    .btn.btn-danger { background: #b91c1c; }
-    .btn.btn-danger:hover { background: #991b1b; }
-    .btn.btn-compact { padding: 10px 12px; min-width: 88px; font-size: 13px; border-radius: 10px; }
-    .btn.btn-xs { padding: 5px 8px; font-size: 11px; border-radius: 8px; }
     .results-meta { margin-top: 8px; color: #64748b; font-size: 12px; }
     @media (max-width: 1120px) {
         .toolbar form { grid-template-columns: 1fr 1fr; }
@@ -155,6 +129,7 @@
     }
 </style>
 
+<div class="admin-rates-page">
 <div class="page-title">
     <h1>Tarifas por ruta</h1>
     <p class="subtle">Define rutas activas y despues los tramos de peso que aplican el precio real.</p>
@@ -311,4 +286,5 @@
     applyFilter();
 })();
 </script>
+</div>
 {% endblock %}

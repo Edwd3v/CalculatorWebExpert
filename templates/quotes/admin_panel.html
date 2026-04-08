@@ -3,6 +3,16 @@
 {% block title %}Panel admin{% endblock %}
 {% block content %}
 <style>
+    .admin-panel-page {
+        --page-accent: #065f46;
+        --page-accent-strong: #064e3b;
+        --page-accent-soft: #ecfdf5;
+        --page-accent-border: #b7e4cf;
+        --ink-soft: #667085;
+    }
+    .admin-panel-page .page-title h1 {
+        color: #065f46;
+    }
     .dashboard-shell {
         display: grid;
         gap: 22px;
@@ -13,10 +23,8 @@
         gap: 12px;
     }
     .kpi-card {
-        background: #ffffff;
         border-radius: 18px;
         padding: 16px;
-        box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
         display: grid;
         gap: 8px;
     }
@@ -49,10 +57,8 @@
         color: #111827;
     }
     .coverage-strip {
-        background: #ffffff;
         border-radius: 16px;
         padding: 14px 16px;
-        box-shadow: 0 10px 22px rgba(15, 23, 42, 0.06);
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -79,9 +85,7 @@
         text-decoration: none;
         color: inherit;
         border-radius: 20px;
-        background: #fff;
         padding: 18px;
-        box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08);
         transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
     .module-card:hover {
@@ -173,6 +177,7 @@
     }
 </style>
 
+<div class="admin-panel-page">
 <div class="page-title">
     <h1>Panel de control</h1>
     <p class="subtle">Monitorea estado general y entra a cada modulo con un clic.</p>
@@ -180,7 +185,7 @@
 
 <div class="dashboard-shell">
     <div class="kpi-grid">
-        <div class="kpi-card">
+        <div class="kpi-card surface-panel">
             <div class="kpi-top">
                 <p class="kpi-label">Usuarios</p>
                 <svg class="kpi-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -192,7 +197,7 @@
             </div>
             <p class="kpi-value">{{ stats.total_users|es_number }}</p>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card surface-panel">
             <div class="kpi-top">
                 <p class="kpi-label">Admins</p>
                 <svg class="kpi-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -202,7 +207,7 @@
             </div>
             <p class="kpi-value">{{ stats.admin_users|es_number }}</p>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card surface-panel">
             <div class="kpi-top">
                 <p class="kpi-label">Cotizaciones</p>
                 <svg class="kpi-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -214,7 +219,7 @@
             </div>
             <p class="kpi-value">{{ stats.total_quotes|es_number }}</p>
         </div>
-        <div class="kpi-card">
+        <div class="kpi-card surface-panel">
             <div class="kpi-top">
                 <p class="kpi-label">Paises</p>
                 <svg class="kpi-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -228,13 +233,13 @@
         </div>
     </div>
 
-    <div class="coverage-strip">
+    <div class="coverage-strip surface-panel">
         <p>Cobertura de tarifas AIR: <strong>{{ stats.countries_with_air_rate|es_number }}</strong> paises</p>
         <p>Cobertura de tarifas SEA: <strong>{{ stats.countries_with_sea_rate|es_number }}</strong> paises</p>
     </div>
 
     <div class="module-grid">
-        <a class="module-card module-rates" href="{% url 'quotes:admin_rates' %}">
+        <a class="module-card module-rates surface-panel" href="{% url 'quotes:admin_rates' %}">
             <div class="module-head">
                 <strong>Tarifas</strong>
                 <svg class="module-arrow" viewBox="0 0 24 24" aria-hidden="true">
@@ -245,7 +250,7 @@
             <p class="module-desc">Configura tarifas por pais para aereo y maritimo, con vigencia automatica.</p>
             <span class="module-cta">Ir a tarifas</span>
         </a>
-        <a class="module-card module-users" href="{% url 'quotes:admin_users' %}">
+        <a class="module-card module-users surface-panel" href="{% url 'quotes:admin_users' %}">
             <div class="module-head">
                 <strong>Usuarios</strong>
                 <svg class="module-arrow" viewBox="0 0 24 24" aria-hidden="true">
@@ -256,7 +261,7 @@
             <p class="module-desc">Da de alta nuevos usuarios y administra permisos de acceso operativo.</p>
             <span class="module-cta">Ir a usuarios</span>
         </a>
-        <a class="module-card module-history" href="{% url 'quotes:admin_history' %}">
+        <a class="module-card module-history surface-panel" href="{% url 'quotes:admin_history' %}">
             <div class="module-head">
                 <strong>Historial</strong>
                 <svg class="module-arrow" viewBox="0 0 24 24" aria-hidden="true">
@@ -268,5 +273,6 @@
             <span class="module-cta">Ir a historial</span>
         </a>
     </div>
+</div>
 </div>
 {% endblock %}

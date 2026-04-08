@@ -3,6 +3,13 @@
 {% block title %}Resultado{% endblock %}
 {% block content %}
 <style>
+    .result-page {
+        --page-accent: #111827;
+        --page-accent-strong: #0b1220;
+        --page-accent-soft: #f3f4f6;
+        --page-accent-border: #d0d5dd;
+        --ink-soft: #667085;
+    }
     .result-shell {
         max-width: 920px;
         margin: 0 auto;
@@ -118,14 +125,7 @@
         margin-top: 20px;
         overflow-x: auto;
     }
-    table {
-        border: none;
-        margin-top: 0;
-    }
-    th, td {
-        border-bottom: 1px solid #eaecf0;
-    }
-    th {
+    .result-page th {
         background: #f9fafb;
         color: #667085;
         font-size: 12px;
@@ -152,7 +152,7 @@
     }
 </style>
 
-<div class="result-shell">
+<div class="result-shell result-page">
     <div>
         <p class="result-kicker">Resultado de cotizacion #{{ quote.id }}</p>
         <div class="route-line">
@@ -236,7 +236,7 @@
             </div>
         </div>
 
-        <div class="table-wrap">
+        <div class="table-wrap table-shell">
             <table>
                 <thead>
                     <tr>

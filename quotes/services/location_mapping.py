@@ -64,7 +64,7 @@ def _generated_entry_point_name(*, country: str, transport_type: str) -> str:
 
 def _find_generated_entry_point(*, country: str, transport_type: str) -> OriginLocation | None:
     code = _generated_entry_point_code(country=country, transport_type=transport_type)
-    return OriginLocation.objects.filter(code=code, is_active=True).first()
+    return OriginLocation.objects.active().filter(code=code).first()
 
 
 def _get_or_create_generated_entry_point(*, country: str, transport_type: str) -> OriginLocation:
@@ -90,26 +90,20 @@ def resolve_country_entry_point(
     if canonical_country not in WORLD_COUNTRY_SET:
         return None
 
+    expected_type = _location_type_for_transport(transport_type)
     preferred_by_type = getattr(settings, "COUNTRY_ENTRY_POINT_CODES", {})
     preferred_code = preferred_by_type.get(transport_type, {}).get(canonical_country)
     if preferred_code:
-        expected_type = _location_type_for_transport(transport_type)
-        preferred_location = OriginLocation.objects.filter(
+        preferred_location = OriginLocation.objects.active().filter(
             code=preferred_code,
-            is_active=True,
             country=canonical_country,
             location_type=expected_type,
         ).first()
         if preferred_location:
             return preferred_location
 
-    expected_type = _location_type_for_transport(transport_type)
     existing_location = (
-        OriginLocation.objects.filter(
-            is_active=True,
-            country=canonical_country,
-            location_type=expected_type,
-        )
+        OriginLocation.objects.for_country_and_type(country=canonical_country, location_type=expected_type)
         .order_by("name", "code")
         .first()
     )

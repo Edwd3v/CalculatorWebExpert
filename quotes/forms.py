@@ -9,6 +9,10 @@ from .models import OriginLocation, Quote, RouteRate, RouteRateTier
 from .services.location_mapping import get_available_countries
 
 
+def _country_choices() -> list[tuple[str, str]]:
+    return [("", "Selecciona pais")] + get_available_countries()
+
+
 class QuoteForm(forms.Form):
     transport_type = forms.ChoiceField(choices=Quote.TransportType.choices, label="Tipo de transporte")
     origin_country = forms.ChoiceField(choices=(), label="Pais de origen")
@@ -22,13 +26,9 @@ class QuoteForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        countries = get_available_countries()
-        country_choices = [("", "Selecciona pais")] + countries
+        country_choices = _country_choices()
         self.fields["origin_country"].choices = country_choices
         self.fields["destination_country"].choices = country_choices
-
-    def clean(self):
-        return super().clean()
 
 
 class QuoteItemInputForm(forms.Form):
@@ -100,7 +100,7 @@ class LocationRateForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        choices = [("", "Selecciona pais")] + get_available_countries()
+        choices = _country_choices()
         self.fields["origin_country"].choices = choices
         self.fields["destination_country"].choices = choices
 
